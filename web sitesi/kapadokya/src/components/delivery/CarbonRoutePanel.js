@@ -1,6 +1,12 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
+import dynamic from 'next/dynamic';
 import { MapPin, Truck, Ship, Train, Plane, Leaf, ChevronDown, ChevronUp, Info } from 'lucide-react';
+
+const RouteMap = dynamic(() => import('./RouteMap'), {
+  ssr: false,
+  loading: () => <div className="w-full h-64 md:h-80 bg-[#F5E6D3]/50 rounded-2xl animate-pulse flex items-center justify-center text-[#5A3E2B] font-medium border border-[#C65A2E]/20">Harita Yükleniyor...</div>
+});
 
 // Transport modes ordered from lowest to highest carbon footprint
 const TRANSPORT_MODES = [
@@ -124,6 +130,19 @@ export default function CarbonRoutePanel({ routeData, productWeight, selectedMod
                 <p className="text-2xl font-black text-[#C65A2E]">{distanceKm} <span className="text-sm font-semibold">km</span></p>
               </div>
             </div>
+          </div>
+
+          {/* 1.5 HARİTA GÖRSELLEŞTİRMESİ */}
+          <div className="bg-white rounded-xl p-5 shadow-sm border border-[#C65A2E]/10 relative z-0">
+            <h5 className="text-sm font-bold text-[#3E2A1F] mb-4 flex items-center gap-2">
+              <MapPin size={16} className="text-[#C65A2E]" />
+              Gerçek Zamanlı Karayolu Haritası
+            </h5>
+            <RouteMap 
+              origin={routeData.origin} 
+              dest={routeData.dest} 
+              geometry={routeData.geometry} 
+            />
           </div>
 
           {/* 2. ANİMASYONLU KARBON ROTA GÖRSELLEŞTİRMESİ */}

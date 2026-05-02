@@ -13,6 +13,7 @@ import { currencyService } from '../../../services/currencyService';
 import DeliveryLocationSelector from '../../../components/delivery/DeliveryLocationSelector';
 import { formatPrice, CULTURAL_INFO_TEXT } from '../../../utils/formatters';
 import { useLanguage } from '../../../context/LanguageContext';
+import { useAuth } from '../../../contexts/AuthContext';
 import { 
   ShoppingCart, Heart, Share2, Video, Sparkles, MapPin, Award, 
   ChevronLeft, Camera, Globe, Hash as XIcon, MessageCircle, Copy, Check,
@@ -21,6 +22,7 @@ import {
 
 export default function ProductDetailPage() {
   const params = useParams();
+  const { isAuthenticated } = useAuth();
   const [product, setProduct] = useState(null);
   const [artisan, setArtisan] = useState(null);
   const [advertisement, setAdvertisement] = useState(null);
@@ -210,10 +212,17 @@ export default function ProductDetailPage() {
 
             {/* Actions */}
             <div className="flex flex-wrap gap-3">
-              <Link href={`/checkout?product=${product.productId}`} className="btn-primary flex-1 justify-center text-lg py-3.5">
-                <ShoppingCart size={20} />
-                {t('product.buyNow')}
-              </Link>
+              {isAuthenticated ? (
+                <Link href={`/checkout?product=${product.productId}`} className="btn-primary flex-1 justify-center text-lg py-3.5">
+                  <ShoppingCart size={20} />
+                  {t('product.buyNow')}
+                </Link>
+              ) : (
+                <Link href="/login" className="btn-secondary flex-1 justify-center text-lg py-3.5 border-terracotta text-terracotta hover:bg-terracotta hover:text-white transition-colors">
+                  <User size={20} />
+                  Giriş Yaparak Satın Al
+                </Link>
+              )}
               <button className="btn-secondary px-4">
                 <Heart size={20} />
               </button>

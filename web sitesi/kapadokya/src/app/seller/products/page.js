@@ -15,7 +15,7 @@ export default function SellerProductsPage() {
 
   // Edit Modal State
   const [editingProduct, setEditingProduct] = useState(null);
-  const [editForm, setEditForm] = useState({ name: '', price: '', imageUrl: '', category: '' });
+  const [editForm, setEditForm] = useState({ name: '', price: '', imageUrl: '', category: '', artisanName: '', productionLocation: '' });
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -42,7 +42,9 @@ export default function SellerProductsPage() {
       name: product.name || '',
       price: product.price || '',
       imageUrl: product.images?.[0] || '',
-      category: product.category || ''
+      category: product.category || '',
+      artisanName: product.artisanName || '',
+      productionLocation: product.productionLocation || ''
     });
   };
 
@@ -58,7 +60,9 @@ export default function SellerProductsPage() {
         name: editForm.name,
         price: editForm.price,
         imageUrl: finalImageUrl,
-        category: editForm.category
+        category: editForm.category,
+        artisanName: isAdmin ? editForm.artisanName : undefined,
+        productionLocation: isAdmin ? editForm.productionLocation : undefined
       });
       
       setEditingProduct(null);
@@ -217,6 +221,34 @@ export default function SellerProductsPage() {
                   Not: Google Drive linki yapıştırırsanız sistem onu otomatik olarak dönüştürecektir.
                 </p>
               </div>
+
+              {isAdmin && (
+                <div className="bg-[#C65A2E]/5 border border-[#C65A2E]/20 p-4 rounded-xl mt-4 space-y-4">
+                  <h4 className="text-sm font-bold text-[#C65A2E] flex items-center gap-1.5"><Tag size={14}/> Admin Özel: Üretici Bilgileri</h4>
+                  <div>
+                    <label className="text-sm font-medium text-dark-brown mb-1.5 flex items-center gap-1.5 block">
+                      Üreten Kişi
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.artisanName}
+                      onChange={e => setEditForm({...editForm, artisanName: e.target.value})}
+                      className="w-full px-4 py-2.5 rounded-xl border border-stone/30 bg-background focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-dark-brown mb-1.5 flex items-center gap-1.5 block">
+                      Üretim Yeri (Konum)
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.productionLocation}
+                      onChange={e => setEditForm({...editForm, productionLocation: e.target.value})}
+                      className="w-full px-4 py-2.5 rounded-xl border border-stone/30 bg-background focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="p-5 border-t border-cream flex gap-3">

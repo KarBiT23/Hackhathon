@@ -18,6 +18,8 @@ export async function PUT(request, { params }) {
     if (body.imageUrl !== undefined) updateData.imageUrl = body.imageUrl;
     if (body.stock !== undefined) updateData.capacity = Number(body.stock);
     if (body.category !== undefined) updateData.Category = body.category;
+    if (body.artisanName !== undefined) updateData.ArtisanName = body.artisanName;
+    if (body.productionLocation !== undefined) updateData.SallerLocation = body.productionLocation;
 
     updateData.updatedAt = new Date().toISOString();
 
