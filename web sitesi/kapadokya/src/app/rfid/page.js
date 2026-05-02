@@ -2,9 +2,13 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useEffect } from 'react';
 import { rfidService } from '../../services/rfidService';
+import { geoService } from '../../services/geoService';
+import { carbonService } from '../../services/carbonService';
+import { currencyService } from '../../services/currencyService';
 import { formatPrice, formatDate, formatTime } from '../../utils/formatters';
-import { Wifi, Search, CreditCard, Package, User, Calendar, Clock, Hash, ArrowRight, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
+import { Wifi, Search, CreditCard, Package, User, Calendar, Clock, Hash, ArrowRight, AlertCircle, CheckCircle, Loader2, DollarSign, Route, Leaf, MapPin } from 'lucide-react';
 
 const DEMO_CARDS = [
   { id: 'rfid-001', label: 'Demo Kart 1 — Kırmızı Kil Vazo' },
@@ -18,6 +22,41 @@ export default function RFIDPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [scanned, setScanned] = useState(false);
+
+  // Hackathon Modules State
+  const [selectedCurrency, setSelectedCurrency] = useState('EUR');
+  const [transportMode, setTransportMode] = useState('Kara (TIR)');
+  const [distanceKm, setDistanceKm] = useState(730);
+  const [carbonFootprint, setCarbonFootprint] = useState(0);
+
+  useEffect(() => {
+    async function loadGeoData() {
+      if (result) {
+        try {
+          const dest = result.order?.deliveryCity || 'İstanbul';
+          const origin = result.product?.productionCity || 'Avanos';
+          const route = await geoService.getDeliveryRoute(origin, dest);
+          setDistanceKm(route.distanceKm);
+          
+          const tMode = result.order?.transportMode || transportMode;
+          setTransportMode(tMode);
+          
+          const carbon = carbonService.calculateCarbonFootprint(route.distanceKm, result.product?.weightKg || 1.8, tMode);
+          setCarbonFootprint(carbon);
+        } catch(e) {
+          console.error(e);
+        }
+      }
+    }
+    loadGeoData();
+  }, [result]);
+
+  useEffect(() => {
+    if (result) {
+      const carbon = carbonService.calculateCarbonFootprint(distanceKm, result.product?.weightKg || 1.8, transportMode);
+      setCarbonFootprint(carbon);
+    }
+  }, [transportMode, distanceKm, result]);
 
   const handleLookup = async (cardId) => {
     const id = cardId || rfidInput.trim();
@@ -204,6 +243,104 @@ export default function RFIDPage() {
                 </div>
               </div>
             </div>
+            
+            {/* Hackathon Technical Modules */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
+              {/* 1. Canlı Kur ile Fiyat Kartı */}
+              <div className="bg-[#F5E6D3] rounded-2xl p-6 shadow-sm border border-stone/20">
+                <div className="flex items-center gap-2 mb-4">
+                  <DollarSign size={20} className="text-[#C65A2E]" />
+                  <h3 className="text-lg font-bold text-[#3E2A1F]" style={{ fontFamily: 'var(--font-display)' }}>Canlı Kur ile Fiyat</h3>
+                </div>
+                <div className="space-y-2 text-sm text-[#5A3E2B]">
+                  <div className="flex justify-between"><span>Ana Fiyat:</span> <span className="font-semibold text-[#C65A2E]">₺{result.product.price}</span></div>
+                  <div className="flex justify-between items-center">
+                    <span>Seçilen Para Birimi:</span>
+                    <select 
+                      className="bg-white border border-[#C65A2E]/30 rounded px-2 py-1 text-xs"
+                      value={selectedCurrency}
+                      onChange={(e) => setSelectedCurrency(e.target.value)}
+                    >
+                      <option value="USD">USD</option>
+                      <option value="EUR">EUR</option>
+                      <option value="GBP">GBP</option>
+                    </select>
+                  </div>
+                  <div className="flex justify-between"><span>Kur Kaynağı:</span> <span>{currencyService.getSourceInfo().source}</span></div>
+                  <div className="flex justify-between"><span>Güncel Kur:</span> <span>1 {selectedCurrency} = {currencyService.getExchangeRate(selectedCurrency)} TL</span></div>
+                  <div className="flex justify-between mt-2 pt-2 border-t border-[#3E2A1F]/10">
+                    <span className="font-semibold">Yaklaşık Tutar:</span> 
+                    <span className="font-bold text-lg text-[#C65A2E]">{currencyService.convertTRYPrice(result.product.price, selectedCurrency).toFixed(2)} {selectedCurrency}</span>
+                  </div>
+                </div>
+                <p className="text-[10px] text-[#5A3E2B]/70 mt-4 leading-tight italic">
+                  Demo Modu: Bu veriler prototip amaçlı gösterilmektedir. Döviz kuru TCMB canlı kur verisi simülasyonudur.
+                </p>
+              </div>
+
+              {/* 2. Ürünün Yolculuğu Kartı */}
+              <div className="bg-[#F5E6D3] rounded-2xl p-6 shadow-sm border border-stone/20">
+                <div className="flex items-center gap-2 mb-4">
+                  <Route size={20} className="text-[#C65A2E]" />
+                  <h3 className="text-lg font-bold text-[#3E2A1F]" style={{ fontFamily: 'var(--font-display)' }}>Ürünün Yolculuğu</h3>
+                </div>
+                <div className="space-y-2 text-sm text-[#5A3E2B]">
+                  <div className="flex justify-between"><span>Üretim Yeri:</span> <span className="font-medium text-right">{result.product.productionLocation || 'Avanos, Kapadokya'}</span></div>
+                  <div className="flex justify-between"><span>Teslimat Noktası:</span> <span className="font-medium text-right">{result.order?.deliveryCity || 'İstanbul'}, {result.order?.deliveryCountry || 'Türkiye'}</span></div>
+                  <div className="flex justify-between"><span>Veri Kaynağı:</span> <span className="font-medium text-right text-xs">OpenStreetMap / Nominatim</span></div>
+                  <div className="flex justify-between items-center mt-2 pt-2 border-t border-[#3E2A1F]/10">
+                    <span className="font-semibold">Tahmini Rota Mesafesi:</span> 
+                    <span className="font-bold text-[#C65A2E]">{distanceKm} km</span>
+                  </div>
+                  
+                  {/* Harita Placeholder */}
+                  <div className="mt-4 h-24 bg-[#E07A3F]/10 rounded-xl border border-[#E07A3F]/20 flex items-center justify-center relative overflow-hidden">
+                    <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#C65A2E 1px, transparent 1px)', backgroundSize: '10px 10px' }} />
+                    <div className="flex items-center gap-2 text-[#C65A2E] font-medium text-xs z-10">
+                      <MapPin size={14} /> <span>{result.product.productionCity || 'Avanos'}</span>
+                      <div className="w-12 h-[2px] bg-[#C65A2E] border-dashed" />
+                      <MapPin size={14} /> <span>{result.order?.deliveryCity || 'İstanbul'}</span>
+                    </div>
+                  </div>
+                </div>
+                <p className="text-[10px] text-[#5A3E2B]/70 mt-3 leading-tight italic">
+                  Demo Modu: Gerçek kullanımda OpenRouteService üzerinden hesaplanacaktır.
+                </p>
+              </div>
+
+              {/* 3. Sürdürülebilir Teslimat Kartı */}
+              <div className="bg-[#F5E6D3] rounded-2xl p-6 shadow-sm border border-stone/20">
+                <div className="flex items-center gap-2 mb-4">
+                  <Leaf size={20} className="text-[#C65A2E]" />
+                  <h3 className="text-lg font-bold text-[#3E2A1F]" style={{ fontFamily: 'var(--font-display)' }}>Sürdürülebilir Teslimat</h3>
+                </div>
+                <div className="space-y-2 text-sm text-[#5A3E2B]">
+                  <div className="flex justify-between items-center">
+                    <span>Taşıma Modu:</span>
+                    <select 
+                      className="bg-white border border-[#C65A2E]/30 rounded px-2 py-1 text-xs"
+                      value={transportMode}
+                      onChange={(e) => setTransportMode(e.target.value)}
+                    >
+                      <option value="Kara (TIR)">Kara (TIR)</option>
+                      <option value="Demiryolu">Demiryolu</option>
+                      <option value="Hava Kargo">Hava Kargo</option>
+                      <option value="Deniz Yolu">Deniz Yolu</option>
+                    </select>
+                  </div>
+                  <div className="flex justify-between"><span>Ürün Ağırlığı:</span> <span>{result.product.weightKg || 1.8} kg</span></div>
+                  <div className="flex justify-between"><span>Emisyon Faktörü:</span> <span className="text-xs text-right">{carbonService.getEmissionFactor(transportMode)} kg CO₂ / ton-km</span></div>
+                  <div className="flex justify-between items-center mt-2 pt-2 border-t border-[#3E2A1F]/10">
+                    <span className="font-semibold">Tahmini Karbon Ayak İzi:</span> 
+                    <span className="font-bold text-lg text-[#C65A2E]">{carbonFootprint} kg CO₂</span>
+                  </div>
+                </div>
+                <p className="text-[10px] text-[#5A3E2B]/70 mt-4 leading-tight italic">
+                  Karbon hesabı, açık kaynak coğrafi veri ile hesaplanan mesafe ve taşıma moduna göre tahmini olarak oluşturulmuştur.
+                </p>
+              </div>
+            </div>
+
           </div>
         )}
       </div>

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { reportService } from '../../../services/reportService';
 import { formatPrice } from '../../../utils/formatters';
-import { ArrowLeft, BarChart3, TrendingUp, Globe, Award, Calendar, DollarSign, ShoppingCart, Package } from 'lucide-react';
+import { ArrowLeft, BarChart3, TrendingUp, Globe, Award, Calendar, DollarSign, ShoppingCart, Package, Leaf, MapPin, Route } from 'lucide-react';
 
 // Dynamic import for Recharts (SSR incompatible)
 const RechartsComponents = dynamic(() => import('../../../components/seller/SalesChart'), { ssr: false });
@@ -140,6 +140,96 @@ export default function ReportsPage() {
                     <span className="font-bold text-terracotta text-lg">{formatPrice(product.revenue)}</span>
                   </div>
                 ))}
+              </div>
+            </div>
+            {/* Hackathon Rapor Modülleri */}
+            <div className="mt-12 pt-8 border-t border-cream">
+              <h2 className="text-xl font-bold text-deep-earth mb-6" style={{ fontFamily: 'var(--font-display)' }}>Sürdürülebilirlik ve Global Satış Analizi</h2>
+              
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                {/* 1. Karbon Raporu Kartı */}
+                <div className="bg-[#F5E6D3] rounded-2xl p-6 shadow-sm border border-stone/20">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Leaf size={20} className="text-[#C65A2E]" />
+                    <h3 className="font-semibold text-[#3E2A1F]">Karbon Raporu</h3>
+                  </div>
+                  <div className="mb-4">
+                    <p className="text-xs text-[#5A3E2B]">Toplam Karbon Ayak İzi</p>
+                    <p className="text-2xl font-bold text-[#C65A2E]">{currentReport.totalCarbonFootprintKg || 0} kg CO₂</p>
+                  </div>
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-semibold text-[#3E2A1F] border-b border-[#3E2A1F]/10 pb-1">Taşıma Moduna Göre Dağılım</h4>
+                    {Object.entries(currentReport.transportModeBreakdown || {}).map(([mode, pct]) => (
+                      <div key={mode} className="flex justify-between items-center text-sm">
+                        <span className="text-[#5A3E2B]">{mode}</span>
+                        <div className="flex items-center gap-2">
+                          <div className="w-20 h-2 bg-white rounded-full overflow-hidden">
+                            <div className="h-full bg-[#C65A2E]" style={{ width: `${pct}%` }}></div>
+                          </div>
+                          <span className="text-xs font-medium w-8 text-right">{pct}%</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-[#5A3E2B]/70 mt-4 italic">Karbon verileri açık kaynak hesaplamalarıyla simüle edilmiştir.</p>
+                </div>
+
+                {/* 2. Global Teslimat Haritası (Placeholder) */}
+                <div className="bg-[#F5E6D3] rounded-2xl p-6 shadow-sm border border-stone/20">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Route size={20} className="text-[#C65A2E]" />
+                    <h3 className="font-semibold text-[#3E2A1F]">Teslimat Haritası Özeti</h3>
+                  </div>
+                  <div className="mb-4">
+                    <p className="text-xs text-[#5A3E2B]">Toplam Teslimat Mesafesi</p>
+                    <p className="text-2xl font-bold text-[#C65A2E]">{currentReport.totalDistanceKm || 0} km</p>
+                  </div>
+                  
+                  {/* Map Placeholder Graphic */}
+                  <div className="h-28 bg-[#E07A3F]/10 rounded-xl border border-[#E07A3F]/20 relative overflow-hidden mb-3 flex items-center justify-center flex-col">
+                     <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#C65A2E 1px, transparent 1px)', backgroundSize: '10px 10px' }} />
+                     <Globe size={32} className="text-[#C65A2E] mb-2 opacity-50" />
+                     <span className="text-xs font-medium text-[#C65A2E]">OpenStreetMap Verisi İle Görselleştirilecektir</span>
+                  </div>
+
+                  <div className="space-y-1">
+                    <h4 className="text-sm font-semibold text-[#3E2A1F] border-b border-[#3E2A1F]/10 pb-1 mb-2">Ülkelere Göre Karbon Etkisi</h4>
+                    {Object.entries(currentReport.countryCarbonBreakdown || {}).map(([country, carbon]) => (
+                      <div key={country} className="flex justify-between text-xs text-[#5A3E2B]">
+                        <span>{country}</span>
+                        <span className="font-medium text-[#C65A2E]">{carbon} kg CO₂</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 3. Canlı Kur ile Gelir Özeti */}
+                <div className="bg-[#F5E6D3] rounded-2xl p-6 shadow-sm border border-stone/20">
+                  <div className="flex items-center gap-2 mb-4">
+                    <DollarSign size={20} className="text-[#C65A2E]" />
+                    <h3 className="font-semibold text-[#3E2A1F]">Canlı Kur Gelir Özeti</h3>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="bg-white/50 p-3 rounded-xl border border-[#C65A2E]/20">
+                      <p className="text-xs text-[#5A3E2B]">TRY Cinsinden Gelir</p>
+                      <p className="text-lg font-bold text-[#3E2A1F]">₺{currentReport.totalRevenueTRY || currentReport.totalRevenue}</p>
+                    </div>
+                    <div className="bg-white p-4 rounded-xl shadow-sm border border-[#C65A2E]/30 relative overflow-hidden">
+                      <div className="absolute top-0 right-0 p-2 bg-[#C65A2E] rounded-bl-lg">
+                        <span className="text-[10px] text-white font-bold">{currentReport.selectedCurrency || 'EUR'}</span>
+                      </div>
+                      <p className="text-xs text-[#5A3E2B] mb-1">Döviz Karşılığı Tahmini Gelir</p>
+                      <p className="text-3xl font-black text-[#C65A2E]">
+                        {currentReport.selectedCurrency === 'USD' ? '$' : currentReport.selectedCurrency === 'EUR' ? '€' : '£'}
+                        {currentReport.convertedRevenue || 0}
+                      </p>
+                      <p className="text-[10px] text-[#5A3E2B] mt-2 flex items-center gap-1">
+                        Kur Kaynağı: {currentReport.exchangeRateSource || 'TCMB (Mock)'}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-[#5A3E2B]/70 mt-4 italic">Gelir analizi TCMB güncel kur referans alınarak döviz cinsine çevrilmiştir.</p>
+                </div>
               </div>
             </div>
           </>

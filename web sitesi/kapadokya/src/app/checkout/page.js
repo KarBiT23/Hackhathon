@@ -5,8 +5,11 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { productService } from '../../services/productService';
 import { shippingService } from '../../services/shippingService';
+import { geoService } from '../../services/geoService';
+import { carbonService } from '../../services/carbonService';
+import { currencyService } from '../../services/currencyService';
 import { formatPrice } from '../../utils/formatters';
-import { CreditCard, Truck, CheckCircle, ShoppingBag, Lock, ArrowLeft, Package, Calendar, Clock, Hash } from 'lucide-react';
+import { CreditCard, Truck, CheckCircle, ShoppingBag, Lock, ArrowLeft, Package, Calendar, Clock, Hash, Leaf, DollarSign } from 'lucide-react';
 
 function CheckoutContent() {
   const searchParams = useSearchParams();
@@ -22,6 +25,12 @@ function CheckoutContent() {
   const [cardCvv, setCardCvv] = useState('');
   const [processing, setProcessing] = useState(false);
 
+  // Hackathon Modules State
+  const [selectedCurrency, setSelectedCurrency] = useState('EUR');
+  const [transportMode, setTransportMode] = useState('Kara (TIR)');
+  const [distanceKm, setDistanceKm] = useState(730);
+  const [carbonFootprint, setCarbonFootprint] = useState(0);
+
   useEffect(() => {
     async function load() {
       if (productId) {
@@ -31,12 +40,26 @@ function CheckoutContent() {
           const shipping = await shippingService.getBySeller(prod.sellerId);
           setShippingOptions(shipping);
           if (shipping.length > 0) setSelectedShipping(shipping[0]);
+
+          try {
+            const route = await geoService.getDeliveryRoute(prod.productionCity || 'Avanos', 'İstanbul');
+            setDistanceKm(route.distanceKm);
+            setCarbonFootprint(carbonService.calculateCarbonFootprint(route.distanceKm, prod.weightKg || 1.8, transportMode));
+          } catch(e) {
+            console.error(e);
+          }
         }
       }
       setLoading(false);
     }
     load();
   }, [productId]);
+
+  useEffect(() => {
+    if (product) {
+      setCarbonFootprint(carbonService.calculateCarbonFootprint(distanceKm, product.weightKg || 1.8, transportMode));
+    }
+  }, [transportMode, distanceKm, product]);
 
   const totalPrice = product ? product.price + (selectedShipping?.price || 0) : 0;
 
@@ -201,7 +224,41 @@ function CheckoutContent() {
                   </div>
                 </div>
 
-                <button onClick={() => setStep(2)} className="btn-primary w-full justify-center text-lg py-3.5">
+                {/* Hackathon: Sürdürülebilir Teslimat Kartı */}
+                <div className="bg-[#F5E6D3] rounded-2xl p-6 shadow-sm border border-stone/20 mt-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Leaf size={18} className="text-[#C65A2E]" />
+                    <h3 className="font-semibold text-[#3E2A1F]">Teslimat Karbon Etkisi</h3>
+                  </div>
+                  <div className="space-y-3 text-sm text-[#5A3E2B]">
+                    <div className="flex justify-between items-center">
+                      <span>Taşıma Modu:</span>
+                      <select 
+                        className="bg-white border border-[#C65A2E]/30 rounded px-3 py-1.5 text-xs font-medium"
+                        value={transportMode}
+                        onChange={(e) => setTransportMode(e.target.value)}
+                      >
+                        <option value="Kara (TIR)">Kara (TIR)</option>
+                        <option value="Demiryolu">Demiryolu</option>
+                        <option value="Hava Kargo">Hava Kargo</option>
+                        <option value="Deniz Yolu">Deniz Yolu</option>
+                      </select>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Tahmini Mesafe:</span> 
+                      <span className="font-medium">{distanceKm} km</span>
+                    </div>
+                    <div className="flex justify-between items-center pt-2 border-t border-[#3E2A1F]/10">
+                      <span className="font-semibold">Tahmini Karbon:</span> 
+                      <span className="font-bold text-lg text-[#C65A2E]">{carbonFootprint} kg CO₂</span>
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-[#5A3E2B]/70 mt-3 italic">
+                    Demo Modu: OpenRouteService mesafe verisi ve taşıma moduna göre hesaplanmıştır.
+                  </p>
+                </div>
+
+                <button onClick={() => setStep(2)} className="btn-primary w-full justify-center text-lg py-3.5 mt-6">
                   Ödemeye Geç
                 </button>
               </>
@@ -306,6 +363,41 @@ function CheckoutContent() {
               <span className="text-2xl font-bold text-terracotta">{formatPrice(totalPrice)}</span>
             </div>
           </div>
+
+          {/* Hackathon: Canlı Kur Özeti Sidebar */}
+          {step < 3 && (
+            <div className="bg-[#F5E6D3] rounded-2xl p-6 shadow-sm border border-stone/20 h-fit mt-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <DollarSign size={18} className="text-[#C65A2E]" />
+                  <h3 className="font-semibold text-[#3E2A1F]">Canlı Kur Özeti</h3>
+                </div>
+                <select 
+                  className="bg-white border border-[#C65A2E]/30 rounded px-2 py-1 text-xs"
+                  value={selectedCurrency}
+                  onChange={(e) => setSelectedCurrency(e.target.value)}
+                >
+                  <option value="USD">USD</option>
+                  <option value="EUR">EUR</option>
+                  <option value="GBP">GBP</option>
+                </select>
+              </div>
+              <div className="space-y-2 text-sm text-[#5A3E2B]">
+                <div className="flex justify-between"><span>Ürün Fiyatı:</span> <span className="font-medium text-[#C65A2E]">₺{totalPrice}</span></div>
+                <div className="flex justify-between"><span>Seçilen Para Birimi:</span> <span>{selectedCurrency}</span></div>
+                <div className="flex justify-between"><span>Kur Kaynağı:</span> <span>{currencyService.getSourceInfo().source}</span></div>
+                <div className="flex justify-between"><span>Güncel Kur:</span> <span>{currencyService.getExchangeRate(selectedCurrency)}</span></div>
+                <div className="flex justify-between items-center mt-2 pt-2 border-t border-[#3E2A1F]/10">
+                  <span className="font-semibold">Yaklaşık Tutar:</span> 
+                  <span className="font-bold text-lg text-[#C65A2E]">{currencyService.convertTRYPrice(totalPrice, selectedCurrency).toFixed(2)} {selectedCurrency}</span>
+                </div>
+              </div>
+              <p className="text-[10px] text-[#5A3E2B]/70 mt-3 italic">
+                Demo Modu: TCMB canlı kur simülasyonudur.
+              </p>
+            </div>
+          )}
+
         </div>
       </div>
     </div>

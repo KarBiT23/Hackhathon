@@ -12,6 +12,24 @@ export const mockReports = [
       'Germany': { orders: 1, revenue: 1250 },
       'France': { orders: 1, revenue: 1200 }
     },
+    totalCarbonFootprintKg: 24.6,
+    totalDistanceKm: 18450,
+    countryCarbonBreakdown: {
+      'Türkiye': 4.2,
+      'United States': 15.5,
+      'Germany': 2.4,
+      'France': 2.5
+    },
+    transportModeBreakdown: {
+      'Kara (TIR)': 45,
+      'Hava Kargo': 40,
+      'Deniz Yolu': 10,
+      'Demiryolu': 5
+    },
+    totalRevenueTRY: 18500,
+    convertedRevenue: 525.56,
+    selectedCurrency: 'EUR',
+    exchangeRateSource: 'TCMB (Mock)',
     topProducts: [
       { productId: 'prod-001', name: 'Kapadokya Kırmızı Kil Vazo', totalSold: 5, revenue: 6250 },
       { productId: 'prod-002', name: 'Avanos El Dokuma Halı', totalSold: 3, revenue: 13500 },
@@ -31,6 +49,24 @@ export const mockReports = [
       'Japan': { orders: 2, revenue: 1580 },
       'United Kingdom': { orders: 1, revenue: 900 }
     },
+    totalCarbonFootprintKg: 31.2,
+    totalDistanceKm: 22100,
+    countryCarbonBreakdown: {
+      'Türkiye': 4.8,
+      'United States': 18.2,
+      'Japan': 5.5,
+      'United Kingdom': 2.7
+    },
+    transportModeBreakdown: {
+      'Kara (TIR)': 50,
+      'Hava Kargo': 35,
+      'Deniz Yolu': 15,
+      'Demiryolu': 0
+    },
+    totalRevenueTRY: 14200,
+    convertedRevenue: 436.25,
+    selectedCurrency: 'USD',
+    exchangeRateSource: 'TCMB (Mock)',
     topProducts: [
       { productId: 'prod-003', name: 'Göreme Seramik Tabak', totalSold: 6, revenue: 5100 },
       { productId: 'prod-006', name: 'Nevşehir El İşi Dekoratif Tabak', totalSold: 5, revenue: 4900 },
@@ -49,6 +85,23 @@ export const mockReports = [
       'France': { orders: 1, revenue: 1250 },
       'Germany': { orders: 1, revenue: 1000 }
     },
+    totalCarbonFootprintKg: 6.2,
+    totalDistanceKm: 4200,
+    countryCarbonBreakdown: {
+      'Türkiye': 1.1,
+      'France': 2.6,
+      'Germany': 2.5
+    },
+    transportModeBreakdown: {
+      'Kara (TIR)': 60,
+      'Hava Kargo': 20,
+      'Deniz Yolu': 10,
+      'Demiryolu': 10
+    },
+    totalRevenueTRY: 5750,
+    convertedRevenue: 163.35,
+    selectedCurrency: 'EUR',
+    exchangeRateSource: 'TCMB (Mock)',
     topProducts: [
       { productId: 'prod-001', name: 'Kapadokya Kırmızı Kil Vazo', totalSold: 2, revenue: 2500 },
       { productId: 'prod-002', name: 'Avanos El Dokuma Halı', totalSold: 1, revenue: 4500 }

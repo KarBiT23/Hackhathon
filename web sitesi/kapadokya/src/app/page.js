@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { productService } from '../services/productService';
-import { ArrowRight, Sparkles, Shield, Truck, Wifi, Star } from 'lucide-react';
+import { currencyService } from '../services/currencyService';
+import { ArrowRight, Sparkles, Shield, Truck, Wifi, Star, Globe } from 'lucide-react';
 import { formatPrice } from '../utils/formatters';
 import { PRODUCT_CATEGORIES } from '../types';
 
@@ -20,6 +21,7 @@ const categoryIcons = {
 export default function HomePage() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [currency, setCurrency] = useState('TRY');
 
   useEffect(() => {
     async function loadProducts() {
@@ -68,8 +70,27 @@ export default function HomePage() {
         </div>
 
         {/* Content */}
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 lg:pt-32 pb-40">
-          <div className="max-w-3xl">
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-40">
+          {/* Currency Selector */}
+          <div className="fixed bottom-6 right-6 z-50 animate-fade-in pointer-events-none">
+            <div className="inline-flex flex-col sm:flex-row bg-white/90 backdrop-blur-md p-1.5 rounded-2xl shadow-xl border border-stone/20 pointer-events-auto">
+              {['TRY', 'USD', 'EUR', 'GBP'].map((curr) => (
+                <button
+                  key={curr}
+                  onClick={() => setCurrency(curr)}
+                  className={`px-4 py-2 text-sm font-bold rounded-xl transition-all ${
+                    currency === curr 
+                      ? 'bg-terracotta text-white shadow-md' 
+                      : 'text-dark-brown hover:bg-cream'
+                  }`}
+                >
+                  {curr}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="max-w-3xl mt-12 lg:mt-24">
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-md rounded-full text-white/90 text-sm mb-6 animate-fade-in-up">
               <Sparkles size={16} />
               <span>Binlerce Yıllık Gelenek, Modern Deneyim</span>
@@ -170,7 +191,7 @@ export default function HomePage() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {products.map((product, index) => (
-                <ProductCard key={product.productId} product={product} index={index} />
+                <ProductCard key={product.productId} product={product} index={index} currency={currency} />
               ))}
             </div>
           )}
@@ -222,7 +243,17 @@ function FeatureItem({ icon, title, desc }) {
   );
 }
 
-function ProductCard({ product, index }) {
+function ProductCard({ product, index, currency }) {
+  const convertedPrice = currencyService.convertTRYPrice(product.price, currency);
+  
+  const getCurrencySymbol = (curr) => {
+    switch(curr) {
+      case 'USD': return '$';
+      case 'EUR': return '€';
+      case 'GBP': return '£';
+      default: return '₺';
+    }
+  };
   return (
     <Link 
       href={`/products/${product.productId}`}
@@ -249,7 +280,14 @@ function ProductCard({ product, index }) {
         </h3>
         <p className="text-sm text-earth line-clamp-2 mb-3">{product.description.substring(0, 80)}...</p>
         <div className="flex items-center justify-between">
-          <span className="text-xl font-bold text-terracotta">{formatPrice(product.price)}</span>
+          <div>
+            <span className="text-xl font-bold text-terracotta">{formatPrice(product.price)}</span>
+            {currency !== 'TRY' && (
+              <div className="text-xs text-earth mt-0.5 font-medium">
+                ≈ {getCurrencySymbol(currency)}{(convertedPrice).toFixed(2)}
+              </div>
+            )}
+          </div>
           <span className="text-xs text-earth bg-cream px-2 py-1 rounded-lg">{product.stock} stokta</span>
         </div>
       </div>
