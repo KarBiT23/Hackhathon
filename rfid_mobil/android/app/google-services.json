@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "796305642513",
+    "project_id": "hackathon-1924a",
+    "storage_bucket": "hackathon-1924a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:796305642513:android:81fda90c795e4d817dcdb0",
+        "android_client_info": {
+          "package_name": "com.example.rfid_mobil"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBwi0nF0Dk6tbhoYiYLiJxakCwrWsoValI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
