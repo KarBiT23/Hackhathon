@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:nfc_manager/nfc_manager.dart';
+
+import 'main.dart';
 import 'lang.dart';
 
 class BuyerPanel extends StatefulWidget {
@@ -31,12 +35,20 @@ class _BuyerPanelState extends State<BuyerPanel> {
 
   void addToCart(Map<String, dynamic> product) {
     setState(() {
-      cartProducts.add(product);
+      final alreadyInCart = cartProducts.any(
+        (item) => item["id"] == product["id"],
+      );
+
+      if (!alreadyInCart) {
+        cartProducts.add(product);
+      }
+
+      selectedIndex = 3;
     });
 
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(SnackBar(content: Text(Lang.t("addedCart"))));
+    ).showSnackBar(const SnackBar(content: Text("Ürün sepete eklendi")));
   }
 
   double get totalPrice {
@@ -94,17 +106,78 @@ class _BuyerPanelState extends State<BuyerPanel> {
     );
   }
 
+  Future<void> startRfidProductSearch() async {
+    final isAvailable =
+        await NfcManager.instance.checkAvailability() ==
+        NfcAvailability.enabled;
+
+    if (!isAvailable) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Bu cihazda NFC desteklenmiyor")),
+      );
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("RFID / NFC kartı telefona yaklaştırın")),
+    );
+
+    NfcManager.instance.startSession(
+      pollingOptions: {NfcPollingOption.iso14443, NfcPollingOption.iso15693},
+      onDiscovered: (NfcTag tag) async {
+        final String tagId = tag.toString();
+
+        await NfcManager.instance.stopSession();
+
+        QuerySnapshot queryResult = await FirebaseFirestore.instance
+            .collection("Urunler")
+            .where("RFID", isEqualTo: tagId)
+            .limit(1)
+            .get();
+
+        if (queryResult.docs.isEmpty) {
+          queryResult = await FirebaseFirestore.instance
+              .collection("Urunler")
+              .where("rfidId", isEqualTo: tagId)
+              .limit(1)
+              .get();
+        }
+
+        if (!mounted) return;
+
+        if (queryResult.docs.isEmpty) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text("Ürün bulunamadı")));
+          return;
+        }
+
+        final doc = queryResult.docs.first;
+        final data = doc.data() as Map<String, dynamic>;
+        data["id"] = doc.id;
+
+        openProductDetail(context, data);
+      },
+    );
+  }
+
   void showLanguageDialog() {
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text(Lang.t("language")),
+          title: const Text("Dil Seç"),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                title: Text(Lang.t("turkish")),
+                leading: Lang.current == "tr"
+                    ? const Icon(Icons.check, color: Colors.green)
+                    : const SizedBox(width: 24),
+                title: const Text("Türkçe"),
                 onTap: () {
                   setState(() {
                     Lang.current = "tr";
@@ -113,7 +186,10 @@ class _BuyerPanelState extends State<BuyerPanel> {
                 },
               ),
               ListTile(
-                title: Text(Lang.t("english")),
+                leading: Lang.current == "en"
+                    ? const Icon(Icons.check, color: Colors.green)
+                    : const SizedBox(width: 24),
+                title: const Text("English"),
                 onTap: () {
                   setState(() {
                     Lang.current = "en";
@@ -222,9 +298,39 @@ class _BuyerPanelState extends State<BuyerPanel> {
 
   Widget buildRfidPage() {
     return Center(
-      child: Text(
-        Lang.t("rfidPage"),
-        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.nfc, size: 90, color: Colors.orange),
+            const SizedBox(height: 20),
+            const Text(
+              "RFID / NFC Ürün Okuma",
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              "Kartı telefona yaklaştır. Ürün Firebase'de kayıtlıysa detay sayfası açılır.",
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 28),
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton.icon(
+                onPressed: startRfidProductSearch,
+                icon: const Icon(Icons.nfc),
+                label: const Text("RFID / NFC Oku"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orange,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -280,7 +386,6 @@ class _BuyerPanelState extends State<BuyerPanel> {
                   ),
                 ),
                 const SizedBox(height: 16),
-
                 paymentBox(
                   title: Lang.t("deliveryInfo"),
                   children: [
@@ -300,12 +405,10 @@ class _BuyerPanelState extends State<BuyerPanel> {
                     ),
                   ],
                 ),
-
                 paymentBox(
                   title: Lang.t("paymentOptions"),
                   children: [radioRow(Lang.t("cardPayment"), true)],
                 ),
-
                 paymentBox(
                   title: Lang.t("cardInfo"),
                   children: [
@@ -321,7 +424,6 @@ class _BuyerPanelState extends State<BuyerPanel> {
                     checkRow("3D Secure", false),
                   ],
                 ),
-
                 paymentBox(
                   title: Lang.t("installments"),
                   children: [
@@ -332,9 +434,7 @@ class _BuyerPanelState extends State<BuyerPanel> {
                     ),
                   ],
                 ),
-
                 checkRow(Lang.t("contractCheck"), false),
-
                 paymentBox(
                   title: Lang.t("contracts"),
                   children: [
@@ -490,6 +590,10 @@ class _BuyerPanelState extends State<BuyerPanel> {
   }
 
   Widget buildAccountPage() {
+    final user = FirebaseAuth.instance.currentUser;
+    final email = user?.email ?? "mail@example.com";
+    final name = email.contains("@") ? email.split("@").first : "guestUser";
+
     return Padding(
       padding: const EdgeInsets.all(18),
       child: Column(
@@ -505,28 +609,26 @@ class _BuyerPanelState extends State<BuyerPanel> {
             style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 24),
-
           Card(
             child: ListTile(
               leading: const Icon(Icons.language),
-              title: Text(Lang.t("language")),
+              title: const Text("Dil Seç"),
               trailing: const Icon(Icons.arrow_forward_ios),
               onTap: showLanguageDialog,
             ),
           ),
-
           Card(
             child: ListTile(
               leading: const Icon(Icons.person),
-              title: Text(Lang.t("nameSurname")),
-              subtitle: Text(Lang.t("guestUser")),
+              title: const Text("Name Surname"),
+              subtitle: Text(name),
             ),
           ),
           Card(
             child: ListTile(
               leading: const Icon(Icons.email),
-              title: Text(Lang.t("email")),
-              subtitle: const Text("mail@example.com"),
+              title: const Text("Email"),
+              subtitle: Text(email),
             ),
           ),
           Card(
@@ -534,14 +636,30 @@ class _BuyerPanelState extends State<BuyerPanel> {
               leading: const Icon(Icons.history),
               title: Text(Lang.t("orderHistory")),
               trailing: const Icon(Icons.arrow_forward_ios),
-              onTap: () {},
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text("Sipariş geçmişi yakında eklenecek"),
+                  ),
+                );
+              },
             ),
           ),
           Card(
             child: ListTile(
               leading: const Icon(Icons.logout, color: Colors.red),
-              title: Text(Lang.t("logout")),
-              onTap: () {},
+              title: const Text("Logout"),
+              onTap: () async {
+                await FirebaseAuth.instance.signOut();
+
+                if (!mounted) return;
+
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginPanel()),
+                  (route) => false,
+                );
+              },
             ),
           ),
         ],
@@ -557,6 +675,15 @@ class _BuyerPanelState extends State<BuyerPanel> {
     if (selectedIndex == 4) return buildAccountPage();
 
     return Center(child: Text(Lang.t("prepared")));
+  }
+
+  @override
+  void dispose() {
+    try {
+      NfcManager.instance.stopSession();
+    } catch (_) {}
+
+    super.dispose();
   }
 
   @override
@@ -747,7 +874,8 @@ class ProductCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final name = data["isim"]?.toString() ?? "";
-    final category = data["kategori"]?.toString() ?? "";
+    final category =
+        data["kategori"]?.toString() ?? data["Category"]?.toString() ?? "";
     final price = data["fiyat"]?.toString() ?? "";
 
     String imageUrl = data["imageUrl"]?.toString() ?? "";
@@ -834,7 +962,7 @@ class ProductCard extends StatelessWidget {
                         foregroundColor: Colors.white,
                         padding: EdgeInsets.zero,
                       ),
-                      child: Text(Lang.t("addToCart")),
+                      child: const Text("Sepete Ekle"),
                     ),
                   ),
                 ],
@@ -910,10 +1038,12 @@ class ProductDetailPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final name = data["isim"]?.toString() ?? "";
-    final category = data["kategori"]?.toString() ?? "";
+    final category =
+        data["kategori"]?.toString() ?? data["Category"]?.toString() ?? "";
     final price = data["fiyat"]?.toString() ?? "";
-    final rfid = data["rfidId"]?.toString() ?? "";
-    final description = data["aciklama"]?.toString() ?? "";
+
+    final description =
+        data["aciklama"]?.toString() ?? data["Explanation"]?.toString() ?? "";
     final video = data["videoUrl"]?.toString() ?? "";
 
     String imageUrl = data["imageUrl"]?.toString() ?? "";
@@ -964,8 +1094,6 @@ class ProductDetailPage extends StatelessWidget {
                   const SizedBox(height: 12),
                   Text("${Lang.t("category")}: $category"),
                   const SizedBox(height: 6),
-                  Text("RFID: $rfid"),
-                  const SizedBox(height: 16),
                   Text(
                     Lang.t("productDescription"),
                     style: const TextStyle(
@@ -991,9 +1119,12 @@ class ProductDetailPage extends StatelessWidget {
                     width: double.infinity,
                     height: 50,
                     child: ElevatedButton.icon(
-                      onPressed: onAddToCart,
+                      onPressed: () {
+                        onAddToCart();
+                        Navigator.pop(context);
+                      },
                       icon: const Icon(Icons.shopping_cart),
-                      label: Text(Lang.t("addToCart")),
+                      label: const Text("Sepete Ekle"),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.orange,
                         foregroundColor: Colors.white,

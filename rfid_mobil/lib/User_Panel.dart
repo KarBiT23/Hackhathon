@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:nfc_manager/nfc_manager.dart';
+
+import 'seller_products_page.dart';
 
 class UserPanel extends StatefulWidget {
   const UserPanel({super.key});
@@ -16,11 +19,6 @@ class _UserPanelState extends State<UserPanel> {
   final rfidIdController = TextEditingController();
   final descriptionController = TextEditingController();
   final imageController = TextEditingController();
-
-  final cargoTypeController = TextEditingController();
-  final sallerLocationController = TextEditingController();
-  final weightKgController = TextEditingController();
-  final capacityController = TextEditingController();
 
   Future<void> startNfcRead() async {
     final isAvailable =
@@ -64,6 +62,15 @@ class _UserPanelState extends State<UserPanel> {
   }
 
   Future<void> addProduct() async {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Önce giriş yapmalısın")));
+      return;
+    }
+
     final name = productNameController.text.trim();
     final category = categoryController.text.trim();
     final price = priceController.text.trim();
@@ -71,10 +78,6 @@ class _UserPanelState extends State<UserPanel> {
     final description = descriptionController.text.trim();
     final image = fixImagePath(imageController.text);
 
-    final cargoType = cargoTypeController.text.trim();
-    final sallerLocation = sallerLocationController.text.trim();
-    final weightKg = double.tryParse(weightKgController.text.trim()) ?? 0;
-    final capacity = int.tryParse(capacityController.text.trim()) ?? 0;
     final fiyat = double.tryParse(price) ?? 0;
 
     if (name.isEmpty || rfid.isEmpty || image.isEmpty) {
@@ -84,49 +87,46 @@ class _UserPanelState extends State<UserPanel> {
       return;
     }
 
-    final existingRfid = await FirebaseFirestore.instance
-        .collection("Urunler")
-        .where("RFID", isEqualTo: rfid)
-        .limit(1)
-        .get();
+    try {
+      final existingRfid = await FirebaseFirestore.instance
+          .collection("Urunler")
+          .where("RFID", isEqualTo: rfid)
+          .limit(1)
+          .get();
 
-    if (existingRfid.docs.isNotEmpty) {
+      if (existingRfid.docs.isNotEmpty) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text("Bu RFID zaten kayıtlı")));
+        return;
+      }
+
+      await FirebaseFirestore.instance.collection("Urunler").add({
+        "isim": name,
+        "Category": category,
+        "Explanation": description,
+        "RFID": rfid,
+        "fiyat": fiyat,
+        "imageUrl": image,
+        "sellerId": user.uid,
+        "createdAt": FieldValue.serverTimestamp(),
+      });
+
+      productNameController.clear();
+      categoryController.clear();
+      priceController.clear();
+      rfidIdController.clear();
+      descriptionController.clear();
+      imageController.clear();
+
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Bu RFID / NFC zaten başka üründe kayıtlı"),
-        ),
+        const SnackBar(content: Text("Ürün Firebase'e kaydedildi")),
       );
-      return;
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Firebase kayıt hatası: $e")));
     }
-
-    await FirebaseFirestore.instance.collection("Urunler").add({
-      "CargoType": cargoType,
-      "Category": category,
-      "Explanation": description,
-      "RFID": rfid,
-      "SallerLocation": sallerLocation,
-      "WeightKg": weightKg,
-      "capacity": capacity,
-      "fiyat": fiyat,
-      "imageUrl": image,
-      "isim": name,
-      "createdAt": FieldValue.serverTimestamp(),
-    });
-
-    productNameController.clear();
-    categoryController.clear();
-    priceController.clear();
-    rfidIdController.clear();
-    descriptionController.clear();
-    imageController.clear();
-    cargoTypeController.clear();
-    sallerLocationController.clear();
-    weightKgController.clear();
-    capacityController.clear();
-
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text("Ürün başarıyla kaydedildi")));
   }
 
   Widget field({
@@ -161,10 +161,6 @@ class _UserPanelState extends State<UserPanel> {
     rfidIdController.dispose();
     descriptionController.dispose();
     imageController.dispose();
-    cargoTypeController.dispose();
-    sallerLocationController.dispose();
-    weightKgController.dispose();
-    capacityController.dispose();
 
     try {
       NfcManager.instance.stopSession();
@@ -200,7 +196,6 @@ class _UserPanelState extends State<UserPanel> {
               field(
                 controller: categoryController,
                 label: "Category",
-                hint: "Kilim, Halı, Çömlek, Vazo...",
                 icon: Icons.category,
               ),
               field(
@@ -212,7 +207,6 @@ class _UserPanelState extends State<UserPanel> {
               field(
                 controller: rfidIdController,
                 label: "RFID",
-                hint: "RFID001",
                 icon: Icons.nfc,
               ),
 
@@ -233,35 +227,8 @@ class _UserPanelState extends State<UserPanel> {
               const SizedBox(height: 12),
 
               field(
-                controller: cargoTypeController,
-                label: "CargoType",
-                hint: "Kargo tipi",
-                icon: Icons.local_shipping,
-              ),
-              field(
-                controller: sallerLocationController,
-                label: "SallerLocation",
-                hint: "Satıcı konumu",
-                icon: Icons.location_on,
-              ),
-              field(
-                controller: weightKgController,
-                label: "WeightKg",
-                hint: "0",
-                icon: Icons.monitor_weight,
-                keyboardType: TextInputType.number,
-              ),
-              field(
-                controller: capacityController,
-                label: "capacity",
-                hint: "0",
-                icon: Icons.scale,
-                keyboardType: TextInputType.number,
-              ),
-              field(
                 controller: priceController,
-                label: "fiyat",
-                hint: "850",
+                label: "Fiyat",
                 icon: Icons.payments,
                 keyboardType: TextInputType.number,
               ),
@@ -283,6 +250,29 @@ class _UserPanelState extends State<UserPanel> {
                   label: const Text("Ürünü Firebase'e Kaydet"),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFB85C38),
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const SellerProductsPage(),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.list),
+                  label: const Text("Benim Ürünlerim"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.brown,
                     foregroundColor: Colors.white,
                   ),
                 ),

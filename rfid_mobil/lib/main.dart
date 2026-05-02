@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // 🔥 EKLENDİ
 
 import 'User_Panel.dart';
 import 'buyer_panel.dart';
@@ -7,8 +9,7 @@ import 'lang.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  await Firebase.initializeApp(); // 🔥 SADECE BU
+  await Firebase.initializeApp();
 
   runApp(const MyApp());
 }
@@ -41,28 +42,69 @@ class _LoginPanelState extends State<LoginPanel> {
   final TextEditingController usernameController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
-  void login() {
+  // 🔥 LOGIN + ROLE OKUMA
+  Future<void> login() async {
     final username = usernameController.text.trim();
     final password = passwordController.text.trim();
 
-    if (username == "satici" && password == "1234") {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const UserPanel()),
-      );
-    } else if (username == "alici" && password == "1234") {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const BuyerPanel()),
-      );
+    String email = "";
+
+    if (username == "satici") {
+      email = "satici@test.com";
+    } else if (username == "alici") {
+      email = "alici@test.com";
     } else {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(Lang.t("loginError"))));
+      return;
+    }
+
+    try {
+      // 🔥 Firebase login
+      final userCredential = await FirebaseAuth.instance
+          .signInWithEmailAndPassword(email: email, password: password);
+
+      final user = userCredential.user;
+
+      if (user == null) {
+        throw Exception("Kullanıcı bulunamadı");
+      }
+
+      // 🔥 Firestore’dan rol çek
+      final doc = await FirebaseFirestore.instance
+          .collection("Users")
+          .doc(user.uid)
+          .get();
+
+      if (!doc.exists) {
+        throw Exception("Firestore'da kullanıcı yok");
+      }
+
+      final role = doc.data()?["role"];
+
+      // 🔥 Role göre yönlendirme
+      if (role == "seller") {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const UserPanel()),
+        );
+      } else if (role == "buyer") {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const BuyerPanel()),
+        );
+      } else {
+        throw Exception("Rol tanımlı değil");
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Hata: $e")));
     }
   }
 
-  // 🔥 DÜZELTİLMİŞ DİL SEÇME
+  // 🌍 Dil seçme (DEĞİŞMEDİ)
   void showLanguageDialog() {
     showDialog(
       context: context,
