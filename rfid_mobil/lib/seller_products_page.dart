@@ -1,9 +1,51 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:convert';
 
 class SellerProductsPage extends StatelessWidget {
   const SellerProductsPage({super.key});
+
+  Widget productImage(Map<String, dynamic> data) {
+    final imageBase64 = data["imageBase64"]?.toString() ?? "";
+    final imageUrl = data["imageUrl"]?.toString() ?? "";
+
+    if (imageBase64.isNotEmpty) {
+      try {
+        final cleanBase64 = imageBase64.contains(",")
+            ? imageBase64.split(",").last
+            : imageBase64;
+
+        return Image.memory(
+          base64Decode(cleanBase64),
+          width: 90,
+          height: 90,
+          fit: BoxFit.cover,
+        );
+      } catch (e) {
+        return const Icon(Icons.error);
+      }
+    }
+
+    if (imageUrl.startsWith("assets/")) {
+      return Image.asset(imageUrl, width: 90, height: 90, fit: BoxFit.cover);
+    }
+
+    return Image.network(
+      imageUrl,
+      width: 90,
+      height: 90,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) {
+        return Container(
+          width: 90,
+          height: 90,
+          color: Colors.grey.shade300,
+          child: const Icon(Icons.image_not_supported),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -59,7 +101,6 @@ class SellerProductsPage extends StatelessWidget {
               final explanation = data["Explanation"] ?? "";
               final rfid = data["RFID"] ?? "";
               final fiyat = data["fiyat"] ?? 0;
-              final imageUrl = data["imageUrl"] ?? "";
 
               return Card(
                 margin: const EdgeInsets.only(bottom: 14),
@@ -73,29 +114,7 @@ class SellerProductsPage extends StatelessWidget {
                     children: [
                       ClipRRect(
                         borderRadius: BorderRadius.circular(12),
-                        child: imageUrl.toString().startsWith("assets/")
-                            ? Image.asset(
-                                imageUrl,
-                                width: 90,
-                                height: 90,
-                                fit: BoxFit.cover,
-                              )
-                            : Image.network(
-                                imageUrl,
-                                width: 90,
-                                height: 90,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Container(
-                                    width: 90,
-                                    height: 90,
-                                    color: Colors.grey.shade300,
-                                    child: const Icon(
-                                      Icons.image_not_supported,
-                                    ),
-                                  );
-                                },
-                              ),
+                        child: productImage(data),
                       ),
 
                       const SizedBox(width: 12),
