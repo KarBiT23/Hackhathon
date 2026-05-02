@@ -16,6 +16,7 @@ export async function PUT(request, { params }) {
     if (body.name !== undefined) updateData.isim = body.name;
     if (body.price !== undefined) updateData.fiyat = Number(body.price);
     if (body.imageUrl !== undefined) updateData.imageUrl = body.imageUrl;
+    if (body.imageBase64 !== undefined) updateData.imageBase64 = body.imageBase64;
     if (body.stock !== undefined) updateData.capacity = Number(body.stock);
     if (body.category !== undefined) updateData.Category = body.category;
     if (body.artisanName !== undefined) updateData.ArtisanName = body.artisanName;

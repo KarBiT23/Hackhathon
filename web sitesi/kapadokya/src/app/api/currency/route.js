@@ -26,6 +26,34 @@ function parseCurrency(xml, code) {
   return Number.parseFloat(xmlText(block, "ForexSelling"));
 }
 
+async function fetchFromXmlFallback(currency, seriesCode) {
+  const response = await fetch(TCMB_DAILY_RATES_URL, {
+    headers: {
+      "User-Agent": "tcmb-currency-demo/1.0",
+      Accept: "application/xml,text/xml;q=0.9,*/*;q=0.8",
+    },
+    cache: 'no-store'
+  });
+
+  if (!response.ok) {
+    throw new Error(`TCMB isteği başarısız: ${response.status}`);
+  }
+
+  const xml = await response.text();
+  const date = xml.match(/Tarih="([^"]+)"/i)?.[1] || new Date().toLocaleDateString('tr-TR');
+  
+  let rate = parseCurrency(xml, currency);
+  
+  return {
+    currency,
+    rate,
+    source: 'TCMB (XML)',
+    seriesCode,
+    lastUpdated: date,
+    isDemo: false
+  };
+}
+
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const currency = searchParams.get('currency');
@@ -38,92 +66,64 @@ export async function GET(request) {
   const apiKey = process.env.EVDS_API_KEY;
 
   try {
-    if (!apiKey) {
-      // API Key yoksa TCMB XML üzerinden çek (Desktop uygulamasındaki gibi)
-      const response = await fetch(TCMB_DAILY_RATES_URL, {
-        headers: {
-          "User-Agent": "tcmb-currency-demo/1.0",
-          Accept: "application/xml,text/xml;q=0.9,*/*;q=0.8",
-        },
-        cache: 'no-store'
-      });
-
-      if (!response.ok) {
-        throw new Error(`TCMB isteği başarısız: ${response.status}`);
-      }
-
-      const xml = await response.text();
-      const date = xml.match(/Tarih="([^"]+)"/i)?.[1] || new Date().toLocaleDateString('tr-TR');
+    if (apiKey) {
+      // EVDS API Key varsa EVDS üzerinden çekmeyi dene
+      const today = new Date();
+      const pastDate = new Date(today);
+      pastDate.setDate(today.getDate() - 5);
       
-      let rate = parseCurrency(xml, currency);
+      const formatDate = (date) => {
+        const d = String(date.getDate()).padStart(2, '0');
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const y = date.getFullYear();
+        return `${d}-${m}-${y}`;
+      };
+
+      const startDate = formatDate(pastDate);
+      const endDate = formatDate(today);
+
+      const url = `https://evds2.tcmb.gov.tr/service/evds/series=${seriesCode}&startDate=${startDate}&endDate=${endDate}&type=json`;
       
-      return NextResponse.json({
-        currency,
-        rate,
-        source: 'TCMB (XML Fallback)',
-        seriesCode,
-        lastUpdated: date,
-        isDemo: false
-      });
-    }
+      try {
+        const response = await fetch(url, { headers: { 'key': apiKey }, cache: 'no-store' });
+        
+        if (response.ok) {
+          const text = await response.text();
+          // Eğer yanıt HTML ise (geçersiz key nedeniyle ana sayfaya yönlendirme gibi) JSON parse etmeden fallback yap
+          if (!text.trim().startsWith('<')) {
+            const data = JSON.parse(text);
+            let rate = null;
+            let lastUpdated = null;
+            
+            if (data.items && data.items.length > 0) {
+              for (let i = data.items.length - 1; i >= 0; i--) {
+                const item = data.items[i];
+                if (item[seriesCode.replace(/\./g, '_')] !== null) {
+                  rate = parseFloat(item[seriesCode.replace(/\./g, '_')]);
+                  lastUpdated = item.Tarih;
+                  break;
+                }
+              }
+            }
 
-    // EVDS API Key varsa EVDS üzerinden çek
-    const today = new Date();
-    const pastDate = new Date(today);
-    pastDate.setDate(today.getDate() - 5);
-    
-    const formatDate = (date) => {
-      const d = String(date.getDate()).padStart(2, '0');
-      const m = String(date.getMonth() + 1).padStart(2, '0');
-      const y = date.getFullYear();
-      return `${d}-${m}-${y}`;
-    };
-
-    const startDate = formatDate(pastDate);
-    const endDate = formatDate(today);
-
-    const url = `https://evds2.tcmb.gov.tr/service/evds/series=${seriesCode}&startDate=${startDate}&endDate=${endDate}&type=json`;
-    const response = await fetch(url, {
-      headers: {
-        'key': apiKey
-      },
-      cache: 'no-store'
-    });
-
-    if (!response.ok) {
-      throw new Error(`EVDS API error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    
-    let rate = null;
-    let lastUpdated = null;
-    
-    if (data.items && data.items.length > 0) {
-      for (let i = data.items.length - 1; i >= 0; i--) {
-        const item = data.items[i];
-        if (item[seriesCode.replace(/\./g, '_')] !== null) {
-          rate = parseFloat(item[seriesCode.replace(/\./g, '_')]);
-          lastUpdated = item.Tarih;
-          break;
+            if (rate) {
+              return NextResponse.json({
+                currency, rate, source: 'TCMB EVDS', seriesCode, lastUpdated, isDemo: false
+              });
+            }
+          }
         }
+      } catch (evdsErr) {
+        console.warn("EVDS fetch failed, falling back to XML:", evdsErr.message);
       }
     }
 
-    if (rate) {
-      return NextResponse.json({
-        currency,
-        rate,
-        source: 'TCMB EVDS',
-        seriesCode,
-        lastUpdated,
-        isDemo: false
-      });
-    } else {
-      throw new Error('No rate data found in EVDS response');
-    }
+    // EVDS çalışmadıysa, key hatalıysa veya key hiç yoksa XML'den çek
+    const xmlData = await fetchFromXmlFallback(currency, seriesCode);
+    return NextResponse.json(xmlData);
+
   } catch (error) {
-    console.error('EVDS API Fetch Error:', error);
+    console.error('Currency API Fetch Error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

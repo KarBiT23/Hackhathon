@@ -7,6 +7,29 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { convertDriveUrl } from '../../../utils/formatters';
 import { ArrowLeft, Edit2, Package, Search, Plus, X, Save, Image as ImageIcon, Tag, Loader2 } from 'lucide-react';
 
+const compressImage = (base64Str, maxWidth = 800, quality = 0.7) => {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.src = base64Str;
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let width = img.width;
+      let height = img.height;
+
+      if (width > maxWidth) {
+        height = Math.round((height * maxWidth) / width);
+        width = maxWidth;
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+  });
+};
+
 export default function SellerProductsPage() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -41,7 +64,7 @@ export default function SellerProductsPage() {
     setEditForm({
       name: product.name || '',
       price: product.price || '',
-      imageUrl: product.images?.[0] || '',
+      imageBase64: product.images?.[0] || '',
       category: product.category || '',
       artisanName: product.artisanName || '',
       productionLocation: product.productionLocation || ''
@@ -51,15 +74,10 @@ export default function SellerProductsPage() {
   const handleSaveEdit = async () => {
     setSaving(true);
     try {
-      let finalImageUrl = editForm.imageUrl;
-      if (finalImageUrl.includes('drive.google.com/file/d/')) {
-        finalImageUrl = convertDriveUrl(finalImageUrl);
-      }
-
       await productService.update(editingProduct.productId, {
         name: editForm.name,
         price: editForm.price,
-        imageUrl: finalImageUrl,
+        imageBase64: editForm.imageBase64,
         category: editForm.category,
         artisanName: isAdmin ? editForm.artisanName : undefined,
         productionLocation: isAdmin ? editForm.productionLocation : undefined
@@ -206,20 +224,29 @@ export default function SellerProductsPage() {
                 />
               </div>
 
-              <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl mt-4">
+              <div className="bg-stone-50 border border-stone-200 p-4 rounded-xl mt-4">
                 <label className="text-sm font-medium text-dark-brown mb-1.5 flex items-center gap-1.5 block">
-                  <span className="text-terracotta"><ImageIcon size={14} /></span> Görsel URL (Google Drive vb.)
+                  <span className="text-terracotta"><ImageIcon size={14} /></span> Görsel Güncelle
                 </label>
+                {editForm.imageBase64 && (
+                  <img src={editForm.imageBase64} alt="Preview" className="w-full h-32 object-cover rounded-xl mb-3 border border-stone-200" />
+                )}
                 <input
-                  type="text"
-                  value={editForm.imageUrl}
-                  onChange={e => setEditForm({...editForm, imageUrl: e.target.value})}
-                  placeholder="https://drive.google.com/file/d/..."
-                  className="w-full px-4 py-3 rounded-xl border border-stone/30 bg-background focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20"
+                  type="file"
+                  accept="image/*"
+                  onChange={e => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onloadend = async () => {
+                        const compressed = await compressImage(reader.result);
+                        setEditForm({...editForm, imageBase64: compressed});
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                  className="w-full text-sm text-earth file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-terracotta file:text-white hover:file:bg-sunset transition-colors"
                 />
-                <p className="text-xs text-blue-800 mt-2">
-                  Not: Google Drive linki yapıştırırsanız sistem onu otomatik olarak dönüştürecektir.
-                </p>
               </div>
 
               {isAdmin && (

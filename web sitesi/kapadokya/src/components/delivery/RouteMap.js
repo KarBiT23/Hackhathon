@@ -42,12 +42,19 @@ const RouteMap = ({ origin, dest, geometry }) => {
     }
   }, [origin, dest, geometry]);
 
-  if (!origin || !dest) return null;
+  if (!origin || !dest || !bounds) {
+    return (
+      <div className="w-full h-64 md:h-80 rounded-2xl border border-[#C65A2E]/20 shadow-sm bg-[#F5E6D3]/30 flex items-center justify-center text-[#5A3E2B] font-medium">
+        Harita verisi hazırlanıyor...
+      </div>
+    );
+  }
 
   return (
     <div className="w-full h-64 md:h-80 rounded-2xl overflow-hidden border border-stone/20 shadow-sm relative z-0">
       <MapContainer 
-        bounds={bounds || [[origin.lat, origin.lng], [dest.lat, dest.lng]]}
+        key={`${origin.lat}-${dest.lat}-${positions.length}`}
+        bounds={bounds}
         scrollWheelZoom={false} 
         className="w-full h-full"
       >
