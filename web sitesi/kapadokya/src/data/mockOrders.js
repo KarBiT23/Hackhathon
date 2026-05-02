@@ -1,0 +1,72 @@
+export const mockOrders = [
+  {
+    orderId: 'order-001',
+    userId: 'user-001',
+    productId: 'prod-001',
+    sellerId: 'seller-001',
+    price: 1250.00,
+    shippingOptionId: 'ship-001',
+    paymentStatus: 'paid',
+    orderDate: '2026-03-15',
+    orderTime: '14:30',
+    country: 'Türkiye',
+    rfidCardId: 'rfid-001',
+    createdAt: '2026-03-15T14:30:00Z'
+  },
+  {
+    orderId: 'order-002',
+    userId: 'user-002',
+    productId: 'prod-003',
+    sellerId: 'seller-002',
+    price: 850.00,
+    shippingOptionId: 'ship-003',
+    paymentStatus: 'paid',
+    orderDate: '2026-03-20',
+    orderTime: '09:15',
+    country: 'United States',
+    rfidCardId: 'rfid-002',
+    createdAt: '2026-03-20T09:15:00Z'
+  },
+  {
+    orderId: 'order-003',
+    userId: 'user-006',
+    productId: 'prod-005',
+    sellerId: 'seller-002',
+    price: 450.00,
+    shippingOptionId: 'ship-004',
+    paymentStatus: 'paid',
+    orderDate: '2026-04-01',
+    orderTime: '16:45',
+    country: 'France',
+    rfidCardId: 'rfid-003',
+    createdAt: '2026-04-01T16:45:00Z'
+  },
+  {
+    orderId: 'order-004',
+    userId: 'user-001',
+    productId: 'prod-002',
+    sellerId: 'seller-001',
+    price: 4500.00,
+    shippingOptionId: 'ship-002',
+    paymentStatus: 'paid',
+    orderDate: '2026-04-10',
+    orderTime: '11:20',
+    country: 'Türkiye',
+    rfidCardId: null,
+    createdAt: '2026-04-10T11:20:00Z'
+  },
+  {
+    orderId: 'order-005',
+    userId: 'user-002',
+    productId: 'prod-006',
+    sellerId: 'seller-002',
+    price: 980.00,
+    shippingOptionId: 'ship-003',
+    paymentStatus: 'pending',
+    orderDate: '2026-04-25',
+    orderTime: '18:00',
+    country: 'United States',
+    rfidCardId: null,
+    createdAt: '2026-04-25T18:00:00Z'
+  }
+];

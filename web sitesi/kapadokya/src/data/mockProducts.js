@@ -1,0 +1,140 @@
+export const mockProducts = [
+  {
+    productId: 'prod-001',
+    sellerId: 'seller-001',
+    name: 'Kapadokya Kırmızı Kil Vazo',
+    category: 'Vazo',
+    description: 'Avanos\'un efsanevi kırmızı kilinden el yapımı vazo. Kızılırmak nehrinin kıyısından toplanan doğal kil, ustanın elinde zarif bir forma kavuşuyor. Her bir vazo, binlerce yıllık Anadolu çömlekçilik geleneğinin modern bir yorumudur.',
+    price: 1250.00,
+    stock: 15,
+    images: [
+      'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=600&h=600&fit=crop',
+      'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=600&h=600&fit=crop',
+      'https://images.unsplash.com/photo-1493106641515-6b5631de4bb9?w=600&h=600&fit=crop'
+    ],
+    materials: 'Kızılırmak kırmızı kili, doğal mineral pigmentler',
+    technique: 'Geleneksel çömlekçi çarkı, el şekillendirme, 1050°C fırınlama',
+    culturalStory: 'Avanos, 3000 yılı aşkın çömlekçilik geleneğiyle dünyaca ünlüdür. Kızılırmak nehrinin taşıdığı kırmızı kil, bu bölgeyi çömlekçiliğin başkenti yapmıştır. Bu vazo, o geleneğin yaşayan bir parçasıdır.',
+    artisanId: 'artisan-001',
+    aiGeneratedTitle: 'Avanos Otantik Kırmızı Kil El Yapımı Vazo',
+    aiGeneratedDescription: 'Binlerce yıllık Anadolu geleneğinden ilham alan, Kızılırmak kilinden üretilmiş premium el yapımı vazo.',
+    aiDetectedCategory: 'Vazo',
+    createdAt: '2026-01-15T10:30:00Z',
+    updatedAt: '2026-04-20T14:15:00Z'
+  },
+  {
+    productId: 'prod-002',
+    sellerId: 'seller-001',
+    name: 'Avanos El Dokuma Halı',
+    category: 'Halı',
+    description: 'Ürgüp\'ün geleneksel dokuma tezgahlarında, doğal boyalarla renklendirilmiş yünlerden dokunan otantik Kapadokya halısı. Her düğüm, nesiller boyu aktarılan bir hikaye taşır.',
+    price: 4500.00,
+    stock: 5,
+    images: [
+      'https://images.unsplash.com/photo-1615875605825-5eb9bb5d52ac?w=600&h=600&fit=crop',
+      'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=600&h=600&fit=crop',
+      'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=600&h=600&fit=crop'
+    ],
+    materials: 'Doğal yün, bitkisel boyalar (ceviz kabuğu, nar kabuğu, indigo)',
+    technique: 'El dokuma, Gördes düğümü, doğal boyama',
+    culturalStory: 'Kapadokya halıları, Türk halıcılık sanatının en nadide örneklerindendir. Her motif, doğadan ve günlük yaşamdan ilham alır. Elibelinde, koçboynuzu ve hayat ağacı gibi motifler, nesilden nesile aktarılan hikayeler taşır.',
+    artisanId: 'artisan-002',
+    aiGeneratedTitle: 'Kapadokya Otantik El Dokuma Geleneksel Halı',
+    aiGeneratedDescription: 'Doğal boyalarla renklendirilmiş, Anadolu motifli premium el dokuma halı.',
+    aiDetectedCategory: 'Halı',
+    createdAt: '2026-02-10T09:00:00Z',
+    updatedAt: '2026-04-18T11:30:00Z'
+  },
+  {
+    productId: 'prod-003',
+    sellerId: 'seller-002',
+    name: 'Göreme Seramik Tabak',
+    category: 'Seramik',
+    description: 'Göreme\'nin eşsiz peri bacalarından ilham alan, el boyama tekniğiyle süslenmiş dekoratif seramik tabak. Hitit ve Osmanlı motiflerinin zarif birleşimi.',
+    price: 850.00,
+    stock: 25,
+    images: [
+      'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=600&h=600&fit=crop',
+      'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=600&h=600&fit=crop',
+      'https://images.unsplash.com/photo-1615875605825-5eb9bb5d52ac?w=600&h=600&fit=crop'
+    ],
+    materials: 'Beyaz kil, sır, mineral pigmentler',
+    technique: 'El boyama, çift fırınlama, sırlama tekniği',
+    culturalStory: 'Göreme seramikleri, bölgenin volkanik topraklarının sunduğu eşsiz hammaddelerle üretilir. Her tabak, Kapadokya\'nın büyülü manzarasını masanıza taşır.',
+    artisanId: 'artisan-003',
+    aiGeneratedTitle: 'Göreme El Boyama Dekoratif Seramik Tabak',
+    aiGeneratedDescription: 'Hitit motifli, el boyama premium seramik dekoratif tabak.',
+    aiDetectedCategory: 'Seramik',
+    createdAt: '2026-01-20T15:45:00Z',
+    updatedAt: '2026-04-22T09:20:00Z'
+  },
+  {
+    productId: 'prod-004',
+    sellerId: 'seller-001',
+    name: 'Ürgüp Geleneksel Çömlek',
+    category: 'Çömlek',
+    description: 'Ürgüp\'ün volkanik topraklarından elde edilen kil ile şekillendirilen geleneksel Kapadokya çömleği. Testi kebabı ve güveç yemekleri için ideal.',
+    price: 650.00,
+    stock: 30,
+    images: [
+      'https://images.unsplash.com/photo-1615875605825-5eb9bb5d52ac?w=600&h=600&fit=crop',
+      'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=600&h=600&fit=crop',
+      'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=600&h=600&fit=crop'
+    ],
+    materials: 'Yerel kırmızı kil, doğal sır',
+    technique: 'Çömlekçi çarkı, geleneksel fırınlama',
+    culturalStory: 'Kapadokya çömlekleri, yüzyıllardır bölge mutfağının ayrılmaz bir parçasıdır. Testi kebabı geleneği, bu çömleklerin ateşle dansından doğmuştur.',
+    artisanId: 'artisan-001',
+    aiGeneratedTitle: 'Kapadokya Otantik Geleneksel Çömlek',
+    aiGeneratedDescription: 'Geleneksel Kapadokya kilinden üretilmiş, mutfak kullanımına uygun el yapımı çömlek.',
+    aiDetectedCategory: 'Çömlek',
+    createdAt: '2026-03-05T08:30:00Z',
+    updatedAt: '2026-04-25T16:00:00Z'
+  },
+  {
+    productId: 'prod-005',
+    sellerId: 'seller-002',
+    name: 'Kapadokya Testi',
+    category: 'Testi',
+    description: 'Geleneksel Kapadokya testisi. Suyu doğal olarak serin tutan gözenekli yapısı ve el işlemeli desenleriyle hem fonksiyonel hem dekoratif bir sanat eseri.',
+    price: 450.00,
+    stock: 20,
+    images: [
+      'https://images.unsplash.com/photo-1493106641515-6b5631de4bb9?w=600&h=600&fit=crop',
+      'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=600&h=600&fit=crop',
+      'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=600&h=600&fit=crop'
+    ],
+    materials: 'Gözenekli kırmızı kil, doğal pigmentler',
+    technique: 'Geleneksel el şekillendirme, açık hava kurutma',
+    culturalStory: 'Anadolu\'da testiler, yaşamın sembolüdür. Su taşıyan testi, bereketin ve misafirperverliğin simgesidir. Her bir testi, ustanın elinde benzersiz bir form kazanır.',
+    artisanId: 'artisan-001',
+    aiGeneratedTitle: 'Anadolu Geleneksel El Yapımı Testi',
+    aiGeneratedDescription: 'Gözenekli kırmızı kilden üretilmiş, suyu doğal serin tutan geleneksel testi.',
+    aiDetectedCategory: 'Testi',
+    createdAt: '2026-02-28T12:00:00Z',
+    updatedAt: '2026-04-15T10:45:00Z'
+  },
+  {
+    productId: 'prod-006',
+    sellerId: 'seller-002',
+    name: 'Nevşehir El İşi Dekoratif Tabak',
+    category: 'Tabak',
+    description: 'Nevşehir\'in yetenekli ustalarının elinden çıkan, İznik çini geleneğinden ilham alan dekoratif tabak. Turkuaz, kobalt mavisi ve mercan kırmızısı tonlarıyla bezeli.',
+    price: 980.00,
+    stock: 12,
+    images: [
+      'https://images.unsplash.com/photo-1615875605825-5eb9bb5d52ac?w=600&h=600&fit=crop',
+      'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=600&h=600&fit=crop',
+      'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=600&h=600&fit=crop'
+    ],
+    materials: 'Beyaz kil, kobalt oksit, turkuaz pigment, mercan kırmızısı sır',
+    technique: 'El boyama, İznik sırlama tekniği, çift fırınlama',
+    culturalStory: 'İznik çini sanatı, Osmanlı İmparatorluğu\'nun en değerli sanat formlarından biridir. Bu tabak, o muhteşem geleneği Kapadokya\'nın eşsiz estetik anlayışıyla birleştirmektedir.',
+    artisanId: 'artisan-003',
+    aiGeneratedTitle: 'İznik İlhamlı Kapadokya Dekoratif Tabak',
+    aiGeneratedDescription: 'İznik çini geleneğinden ilham alan, el boyama premium dekoratif tabak.',
+    aiDetectedCategory: 'Tabak',
+    createdAt: '2026-03-10T14:20:00Z',
+    updatedAt: '2026-04-28T08:30:00Z'
+  }
+];
