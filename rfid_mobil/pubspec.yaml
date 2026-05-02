@@ -21,7 +21,10 @@ dependencies:
 
   # 🔥 NFC
   nfc_manager: ^4.2.1
-
+  image_picker: ^1.0.7
+  google_sign_in: ^6.3.0
+  googleapis:
+  extension_google_sign_in_as_googleapis_auth:
 flutter:
   uses-material-design: true
 

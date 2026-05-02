@@ -1,7 +1,13 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:nfc_manager/nfc_manager.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:googleapis/drive/v3.dart' as drive;
+import 'package:extension_google_sign_in_as_googleapis_auth/extension_google_sign_in_as_googleapis_auth.dart';
 
 import 'seller_products_page.dart';
 
@@ -19,6 +25,71 @@ class _UserPanelState extends State<UserPanel> {
   final rfidIdController = TextEditingController();
   final descriptionController = TextEditingController();
   final imageController = TextEditingController();
+
+  File? selectedImageFile;
+  bool isUploading = false;
+
+  final String driveFolderId = "15pe157KOt2QVabVgTSnNACxdiLoLN-r3";
+
+  Future<void> takePhoto() async {
+    final picker = ImagePicker();
+
+    final pickedFile = await picker.pickImage(
+      source: ImageSource.camera,
+      imageQuality: 80,
+    );
+
+    if (pickedFile == null) return;
+
+    setState(() {
+      selectedImageFile = File(pickedFile.path);
+      imageController.text = pickedFile.path;
+    });
+  }
+
+  Future<String?> uploadImageToDrive(File imageFile) async {
+    final googleSignIn = GoogleSignIn(scopes: [drive.DriveApi.driveFileScope]);
+
+    final account = await googleSignIn.signIn();
+
+    if (account == null) {
+      return null;
+    }
+
+    final authClient = await googleSignIn.authenticatedClient();
+
+    if (authClient == null) {
+      return null;
+    }
+
+    final driveApi = drive.DriveApi(authClient);
+
+    final fileName = "urun_${DateTime.now().millisecondsSinceEpoch}.jpg";
+
+    final driveFile = drive.File()
+      ..name = fileName
+      ..parents = [driveFolderId];
+
+    final media = drive.Media(imageFile.openRead(), imageFile.lengthSync());
+
+    final uploadedFile = await driveApi.files.create(
+      driveFile,
+      uploadMedia: media,
+    );
+
+    if (uploadedFile.id == null) {
+      return null;
+    }
+
+    await driveApi.permissions.create(
+      drive.Permission()
+        ..type = "anyone"
+        ..role = "reader",
+      uploadedFile.id!,
+    );
+
+    return "https://drive.google.com/uc?export=view&id=${uploadedFile.id}";
+  }
 
   Future<void> startNfcRead() async {
     final isAvailable =
@@ -76,7 +147,8 @@ class _UserPanelState extends State<UserPanel> {
     final price = priceController.text.trim();
     final rfid = rfidIdController.text.trim();
     final description = descriptionController.text.trim();
-    final image = fixImagePath(imageController.text);
+
+    String image = fixImagePath(imageController.text);
 
     final fiyat = double.tryParse(price) ?? 0;
 
@@ -88,6 +160,10 @@ class _UserPanelState extends State<UserPanel> {
     }
 
     try {
+      setState(() {
+        isUploading = true;
+      });
+
       final existingRfid = await FirebaseFirestore.instance
           .collection("Urunler")
           .where("RFID", isEqualTo: rfid)
@@ -99,6 +175,19 @@ class _UserPanelState extends State<UserPanel> {
           context,
         ).showSnackBar(const SnackBar(content: Text("Bu RFID zaten kayıtlı")));
         return;
+      }
+
+      if (selectedImageFile != null) {
+        final driveUrl = await uploadImageToDrive(selectedImageFile!);
+
+        if (driveUrl == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Fotoğraf Drive'a yüklenemedi")),
+          );
+          return;
+        }
+
+        image = driveUrl;
       }
 
       await FirebaseFirestore.instance.collection("Urunler").add({
@@ -119,6 +208,10 @@ class _UserPanelState extends State<UserPanel> {
       descriptionController.clear();
       imageController.clear();
 
+      setState(() {
+        selectedImageFile = null;
+      });
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Ürün Firebase'e kaydedildi")),
       );
@@ -126,6 +219,12 @@ class _UserPanelState extends State<UserPanel> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text("Firebase kayıt hatası: $e")));
+    } finally {
+      if (mounted) {
+        setState(() {
+          isUploading = false;
+        });
+      }
     }
   }
 
@@ -232,11 +331,40 @@ class _UserPanelState extends State<UserPanel> {
                 icon: Icons.payments,
                 keyboardType: TextInputType.number,
               ),
+
+              if (selectedImageFile != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(14),
+                    child: Image.file(
+                      selectedImageFile!,
+                      height: 180,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+
               field(
                 controller: imageController,
                 label: "imageUrl",
-                hint: "assets/bowl.jpeg",
+                hint: "Kamera ile fotoğraf çekince otomatik dolar",
                 icon: Icons.image,
+              ),
+
+              SizedBox(
+                width: double.infinity,
+                height: 46,
+                child: ElevatedButton.icon(
+                  onPressed: isUploading ? null : takePhoto,
+                  icon: const Icon(Icons.camera_alt),
+                  label: const Text("Kamera ile Fotoğraf Çek"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
               ),
 
               const SizedBox(height: 16),
@@ -245,9 +373,19 @@ class _UserPanelState extends State<UserPanel> {
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton.icon(
-                  onPressed: addProduct,
-                  icon: const Icon(Icons.add),
-                  label: const Text("Ürünü Firebase'e Kaydet"),
+                  onPressed: isUploading ? null : addProduct,
+                  icon: isUploading
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.add),
+                  label: Text(
+                    isUploading
+                        ? "Drive'a yükleniyor..."
+                        : "Ürünü Firebase'e Kaydet",
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFB85C38),
                     foregroundColor: Colors.white,
