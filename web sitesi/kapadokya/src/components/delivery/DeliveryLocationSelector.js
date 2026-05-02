@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { MapPin, Search } from 'lucide-react';
 import { geoService } from '../../services/geoService';
 import { carbonService } from '../../services/carbonService';
+import { useLanguage } from '../../context/LanguageContext';
 
 const COUNTRY_CITIES = {
   "Türkiye": ["İstanbul", "Ankara", "İzmir", "Bursa", "Antalya", "Nevşehir"],
@@ -30,10 +31,11 @@ export default function DeliveryLocationSelector({
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [results, setResults] = useState(null);
+  const { t } = useLanguage();
 
   const handleCalculate = async () => {
     if (!country || !city) {
-      setError('Lütfen ülke ve şehir alanlarını doldurunuz.');
+      setError(t('delivery.fillError'));
       return;
     }
     setError(null);
@@ -69,7 +71,7 @@ export default function DeliveryLocationSelector({
         setTimeout(() => setSuccess(false), 5000);
       }
     } catch (err) {
-      setError('Hesaplama sırasında bir hata oluştu.');
+      setError(t('delivery.calcError'));
       console.error(err);
     } finally {
       setLoading(false);
@@ -80,14 +82,14 @@ export default function DeliveryLocationSelector({
     <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#C65A2E]/20 mb-6">
       <h3 className="text-lg font-bold text-[#3E2A1F] mb-4 flex items-center gap-2" style={{ fontFamily: 'var(--font-display)' }}>
         <MapPin className="text-[#C65A2E]" size={20} />
-        Teslimat ve Karbon Hesapla
+        {t('delivery.title')}
       </h3>
       
       {error && <p className="text-xs text-red-500 mb-3 font-medium bg-red-50 p-2 rounded border border-red-100">{error}</p>}
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         <div>
-          <label className="block text-xs font-medium text-[#5A3E2B] mb-1">Ülke</label>
+          <label className="block text-xs font-medium text-[#5A3E2B] mb-1">{t('delivery.country')}</label>
           <input 
             type="text" 
             value={country} 
@@ -105,7 +107,7 @@ export default function DeliveryLocationSelector({
           </datalist>
         </div>
         <div>
-          <label className="block text-xs font-medium text-[#5A3E2B] mb-1">Şehir</label>
+          <label className="block text-xs font-medium text-[#5A3E2B] mb-1">{t('delivery.city')}</label>
           <input 
             type="text" 
             value={city} 
@@ -121,7 +123,7 @@ export default function DeliveryLocationSelector({
           </datalist>
         </div>
         <div className="md:col-span-2">
-          <label className="block text-xs font-medium text-[#5A3E2B] mb-1">İlçe / Açık Adres</label>
+          <label className="block text-xs font-medium text-[#5A3E2B] mb-1">{t('delivery.district')}</label>
           <input 
             type="text" 
             value={district} 
@@ -131,7 +133,7 @@ export default function DeliveryLocationSelector({
           />
         </div>
         <div className="md:col-span-2">
-          <label className="block text-xs font-medium text-[#5A3E2B] mb-1">Taşıma Modu</label>
+          <label className="block text-xs font-medium text-[#5A3E2B] mb-1">{t('delivery.transportMode')}</label>
           <select 
             value={transportMode} 
             onChange={e => setTransportMode(e.target.value)}
@@ -155,7 +157,7 @@ export default function DeliveryLocationSelector({
         ) : (
           <>
             <Search size={16} />
-            Mesafeyi ve Karbonu Hesapla
+            {t('delivery.calculateBtn')}
           </>
         )}
       </button>
@@ -163,20 +165,20 @@ export default function DeliveryLocationSelector({
       {success && results && (
         <div className="mt-6 p-4 bg-[#F5E6D3]/50 rounded-xl border border-[#C65A2E]/30 animate-fade-in">
           <h4 className="font-bold text-[#3E2A1F] mb-3 text-sm flex items-center gap-2">
-            ✅ Hesaplama Sonucu Tablosu
+            ✅ {t('delivery.resultTitle')}
           </h4>
           <table className="w-full text-sm text-left">
             <tbody>
               <tr className="border-b border-[#C65A2E]/10">
-                <td className="py-2 text-[#5A3E2B]">Tahmini Mesafe</td>
+                <td className="py-2 text-[#5A3E2B]">{t('delivery.estDistance')}</td>
                 <td className="py-2 font-bold text-[#C65A2E] text-right">{results.distanceKm} km</td>
               </tr>
               <tr className="border-b border-[#C65A2E]/10">
-                <td className="py-2 text-[#5A3E2B]">Taşıma Modu</td>
+                <td className="py-2 text-[#5A3E2B]">{t('delivery.transportMode')}</td>
                 <td className="py-2 font-bold text-[#C65A2E] text-right">{results.transportMode}</td>
               </tr>
               <tr>
-                <td className="py-2 text-[#5A3E2B]">Karbon Ayak İzi</td>
+                <td className="py-2 text-[#5A3E2B]">{t('delivery.carbonFootprint')}</td>
                 <td className="py-2 font-bold text-[#C65A2E] text-right">{results.carbonFootprint} kg CO₂</td>
               </tr>
             </tbody>

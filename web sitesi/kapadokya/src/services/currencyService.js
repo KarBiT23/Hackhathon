@@ -61,7 +61,8 @@ class CurrencyService {
       return data;
       
     } catch (e) {
-      console.error(`Error fetching EVDS for ${currency}:`, e);
+      // Sadece geliştirici konsolunda uyarı olarak göster, kırmızı Next.js overlay çıkarmaması için console.error yerine warn kullanıyoruz.
+      console.warn(`EVDS API proxy yanıt vermedi (${currency}). Demo kurlara geçiliyor.`);
       // Demo Fallback
       return {
         currency,

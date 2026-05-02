@@ -7,6 +7,7 @@ import { currencyService } from '../services/currencyService';
 import { ArrowRight, Sparkles, Shield, Truck, Wifi, Star, Globe } from 'lucide-react';
 import { formatPrice } from '../utils/formatters';
 import { PRODUCT_CATEGORIES } from '../types';
+import { useLanguage } from '../context/LanguageContext';
 
 const categoryIcons = {
   'Vazo': '🏺',
@@ -22,6 +23,7 @@ export default function HomePage() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currency, setCurrency] = useState('TRY');
+  const { t } = useLanguage();
 
   useEffect(() => {
     async function loadProducts() {
@@ -93,30 +95,27 @@ export default function HomePage() {
           <div className="max-w-3xl mt-12 lg:mt-24">
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-md rounded-full text-white/90 text-sm mb-6 animate-fade-in-up">
               <Sparkles size={16} />
-              <span>Binlerce Yıllık Gelenek, Modern Deneyim</span>
+              <span>{t('home.heroDesc').split('.')[0]}</span>
             </div>
             
             <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold text-white leading-tight mb-6 animate-fade-in-up stagger-1" style={{ fontFamily: 'var(--font-display)' }}>
-              Kapadokya&apos;nın
+              {t('home.heroTitle')}
               <br />
-              <span className="text-cream">El Sanatları</span>
-              <br />
-              Hazinesi
+              <span className="text-cream">{t('home.heroHighlight')}</span>
             </h1>
             
             <p className="text-lg sm:text-xl text-white/85 leading-relaxed mb-8 max-w-xl animate-fade-in-up stagger-2">
-              Her eserin arkasında bir usta, her ustanın elinde bir hikaye. 
-              Kızılırmak&apos;ın kırmızı kilinden doğan sanatı keşfedin.
+              {t('home.heroDesc')}
             </p>
             
             <div className="flex flex-wrap gap-4 animate-fade-in-up stagger-3">
               <Link href="/products" className="inline-flex items-center gap-2 bg-white text-terracotta font-semibold px-6 py-3.5 rounded-xl hover:bg-cream transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5">
-                Ürünleri Keşfet
+                {t('home.exploreBtn')}
                 <ArrowRight size={18} />
               </Link>
               <Link href="/rfid" className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-md text-white font-semibold px-6 py-3.5 rounded-xl border border-white/30 hover:bg-white/25 transition-all">
                 <Wifi size={18} />
-                RFID Kart Okut
+                {t('nav.rfid')}
               </Link>
             </div>
           </div>
@@ -127,10 +126,10 @@ export default function HomePage() {
       <section className="bg-white border-b border-cream">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-            <FeatureItem icon={<Shield size={20} />} title="Otantik Eserler" desc="Tescilli üretim teknikleri" />
-            <FeatureItem icon={<Sparkles size={20} />} title="AI Destekli" desc="Yapay zeka ürün tanıma" />
-            <FeatureItem icon={<Wifi size={20} />} title="RFID Entegreli" desc="Dijital ürün deneyimi" />
-            <FeatureItem icon={<Truck size={20} />} title="Dünya Geneli Kargo" desc="Güvenli teslimat" />
+            <FeatureItem icon={<Shield size={20} />} title={t('home.feature1Title')} desc={t('home.feature1Desc')} />
+            <FeatureItem icon={<Sparkles size={20} />} title={t('home.feature2Title')} desc={t('home.feature2Desc')} />
+            <FeatureItem icon={<Wifi size={20} />} title="RFID" desc={t('home.feature1Desc')} />
+            <FeatureItem icon={<Truck size={20} />} title={t('home.feature3Title')} desc={t('home.feature3Desc')} />
           </div>
         </div>
       </section>
@@ -166,12 +165,11 @@ export default function HomePage() {
           <div className="flex items-end justify-between mb-12">
             <div>
               <h2 className="text-3xl lg:text-4xl font-bold text-deep-earth mb-3" style={{ fontFamily: 'var(--font-display)' }}>
-                Öne Çıkan Ürünler
+                {t('home.featuredProducts')}
               </h2>
-              <p className="text-earth text-lg">Ustalarımızın en seçkin eserleri</p>
             </div>
             <Link href="/products" className="hidden sm:flex items-center gap-2 text-terracotta font-semibold hover:text-hover transition-colors">
-              Tümünü Gör <ArrowRight size={18} />
+              {t('home.exploreBtn')} <ArrowRight size={18} />
             </Link>
           </div>
           
@@ -198,7 +196,7 @@ export default function HomePage() {
           
           <div className="mt-8 text-center sm:hidden">
             <Link href="/products" className="btn-primary">
-              Tüm Ürünleri Gör <ArrowRight size={18} />
+              {t('home.exploreBtn')} <ArrowRight size={18} />
             </Link>
           </div>
         </div>
@@ -212,15 +210,13 @@ export default function HomePage() {
             Kültürel Miras
           </div>
           <h2 className="text-3xl lg:text-4xl font-bold mb-6" style={{ fontFamily: 'var(--font-display)' }}>
-            Her Eserin Bir <span className="text-sunset">Hikayesi</span> Var
+            {t('home.featuresTitle')}
           </h2>
           <p className="text-lg text-stone leading-relaxed mb-8">
-            Bu eserler, Kapadokya bölgesinin tescilli teknikleri ve yerel materyalleri kullanılarak üretilmiştir. 
-            Kızılırmak yatağından alınan kırmızı kil, nesilden nesile aktarılan teknikler ve ustanın benzersiz dokunuşu... 
-            Her ürün, binlerce yıllık bir geleneğin yaşayan parçasıdır.
+            {t('footer.aboutText')}
           </p>
           <Link href="/products" className="inline-flex items-center gap-2 bg-gradient-to-r from-sunset to-terracotta text-white font-semibold px-8 py-3.5 rounded-xl hover:shadow-lg hover:-translate-y-0.5 transition-all">
-            Hikayeleri Keşfet
+            {t('home.exploreBtn')}
             <ArrowRight size={18} />
           </Link>
         </div>

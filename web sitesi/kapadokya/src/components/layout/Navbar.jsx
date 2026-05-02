@@ -3,11 +3,13 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '../../contexts/AuthContext';
-import { Menu, X, ShoppingBag, User, LogOut, CreditCard, Wifi, LayoutDashboard, Home, Package } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
+import { Menu, X, ShoppingBag, User, LogOut, CreditCard, Wifi, LayoutDashboard, Home, Package, Globe } from 'lucide-react';
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const { user, logout, isAuthenticated, isSeller, isAdmin } = useAuth();
+  const { t, language, changeLanguage } = useLanguage();
 
   return (
     <nav className="sticky top-0 z-50 glass border-b border-stone/30">
@@ -28,16 +30,32 @@ export default function Navbar() {
 
           {/* Desktop Navigation */}
           <div className="hidden lg:flex items-center gap-1">
-            <NavLink href="/" icon={<Home size={16} />}>Ana Sayfa</NavLink>
-            <NavLink href="/products" icon={<Package size={16} />}>Ürünler</NavLink>
-            <NavLink href="/rfid" icon={<Wifi size={16} />}>RFID Okuma</NavLink>
+            <NavLink href="/" icon={<Home size={16} />}>{t('nav.home')}</NavLink>
+            <NavLink href="/products" icon={<Package size={16} />}>{t('nav.products')}</NavLink>
+            <NavLink href="/rfid" icon={<Wifi size={16} />}>{t('nav.rfid')}</NavLink>
             {(isSeller || isAdmin) && (
-              <NavLink href="/seller" icon={<LayoutDashboard size={16} />}>Satıcı Paneli</NavLink>
+              <NavLink href="/seller" icon={<LayoutDashboard size={16} />}>{t('nav.sellerPanel')}</NavLink>
             )}
           </div>
 
           {/* Right Actions */}
           <div className="hidden lg:flex items-center gap-3">
+            {/* Language Switcher */}
+            <div className="flex items-center bg-cream/50 rounded-xl p-1 border border-stone/20 mr-2">
+              <button 
+                onClick={() => changeLanguage('tr')}
+                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${language === 'tr' ? 'bg-white text-terracotta shadow-sm' : 'text-earth hover:text-dark-brown'}`}
+              >
+                TR
+              </button>
+              <button 
+                onClick={() => changeLanguage('en')}
+                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${language === 'en' ? 'bg-white text-terracotta shadow-sm' : 'text-earth hover:text-dark-brown'}`}
+              >
+                EN
+              </button>
+            </div>
+
             {isAuthenticated ? (
               <>
                 <div className="flex items-center gap-2 px-3 py-1.5 bg-cream rounded-xl">
@@ -75,12 +93,31 @@ export default function Navbar() {
       {isOpen && (
         <div className="lg:hidden border-t border-stone/20 bg-white/95 backdrop-blur-lg animate-fade-in">
           <div className="px-4 py-4 space-y-2">
-            <MobileNavLink href="/" icon={<Home size={18} />} onClick={() => setIsOpen(false)}>Ana Sayfa</MobileNavLink>
-            <MobileNavLink href="/products" icon={<Package size={18} />} onClick={() => setIsOpen(false)}>Ürünler</MobileNavLink>
-            <MobileNavLink href="/rfid" icon={<Wifi size={18} />} onClick={() => setIsOpen(false)}>RFID Okuma</MobileNavLink>
+            <MobileNavLink href="/" icon={<Home size={18} />} onClick={() => setIsOpen(false)}>{t('nav.home')}</MobileNavLink>
+            <MobileNavLink href="/products" icon={<Package size={18} />} onClick={() => setIsOpen(false)}>{t('nav.products')}</MobileNavLink>
+            <MobileNavLink href="/rfid" icon={<Wifi size={18} />} onClick={() => setIsOpen(false)}>{t('nav.rfid')}</MobileNavLink>
             {(isSeller || isAdmin) && (
-              <MobileNavLink href="/seller" icon={<LayoutDashboard size={18} />} onClick={() => setIsOpen(false)}>Satıcı Paneli</MobileNavLink>
+              <MobileNavLink href="/seller" icon={<LayoutDashboard size={18} />} onClick={() => setIsOpen(false)}>{t('nav.sellerPanel')}</MobileNavLink>
             )}
+            
+            {/* Mobile Language Switcher */}
+            <div className="flex items-center justify-between px-4 py-3 border-t border-stone/20 mt-2">
+              <span className="text-sm font-medium text-dark-brown flex items-center gap-2"><Globe size={16} /> Dil / Language</span>
+              <div className="flex items-center bg-cream/50 rounded-xl p-1 border border-stone/20">
+                <button 
+                  onClick={() => changeLanguage('tr')}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${language === 'tr' ? 'bg-white text-terracotta shadow-sm' : 'text-earth hover:text-dark-brown'}`}
+                >
+                  TR
+                </button>
+                <button 
+                  onClick={() => changeLanguage('en')}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${language === 'en' ? 'bg-white text-terracotta shadow-sm' : 'text-earth hover:text-dark-brown'}`}
+                >
+                  EN
+                </button>
+              </div>
+            </div>
             <div className="border-t border-stone/20 pt-3 mt-3">
               {isAuthenticated ? (
                 <div className="flex items-center justify-between">

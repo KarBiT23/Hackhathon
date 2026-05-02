@@ -1,90 +1,95 @@
+'use client';
+
 import Link from 'next/link';
-import { MapPin, Phone, Mail, Camera, Globe, Hash } from 'lucide-react';
+import { Package, MapPin, Phone, Mail, Camera, Globe, Hash } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 
 export default function Footer() {
+  const { t } = useLanguage();
+
   return (
-    <footer className="bg-deep-earth text-cream/90 mt-auto">
-      {/* Top gradient line */}
-      <div className="h-1 bg-gradient-to-r from-sunset via-warm-orange to-terracotta" />
-      
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
+    <footer className="bg-stone border-t border-stone/20 pt-16 pb-8 relative overflow-hidden">
+      {/* Decorative patterns */}
+      <div className="absolute top-0 right-0 w-64 h-64 bg-terracotta/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+      <div className="absolute bottom-0 left-0 w-96 h-96 bg-warm-orange/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2"></div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
+          
           {/* Brand */}
-          <div>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sunset via-warm-orange to-terracotta flex items-center justify-center">
+          <div className="space-y-6">
+            <Link href="/" className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sunset via-warm-orange to-terracotta flex items-center justify-center shadow-md">
                 <span className="text-white font-bold text-lg" style={{ fontFamily: 'var(--font-display)' }}>K</span>
               </div>
               <div>
-                <h3 className="text-xl font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>Kapadokya</h3>
-                <p className="text-xs text-stone">El Sanatları</p>
+                <h2 className="text-xl font-bold text-dark-brown" style={{ fontFamily: 'var(--font-display)' }}>
+                  Kapadokya
+                </h2>
+                <p className="text-xs text-earth -mt-1">El Sanatları</p>
               </div>
-            </div>
-            <p className="text-sm text-stone leading-relaxed">
-              Kapadokya&apos;nın binlerce yıllık el sanatları geleneğini dijital dünyaya taşıyoruz. 
-              Her eser, bir ustanın hikayesini taşır.
+            </Link>
+            <p className="text-sm text-earth leading-relaxed pr-4">
+              {t('footer.aboutText')}
             </p>
+            <div className="flex items-center gap-4">
+              <SocialLink href="#" icon={<Camera size={18} />} />
+              <SocialLink href="#" icon={<Hash size={18} />} />
+              <SocialLink href="#" icon={<Globe size={18} />} />
+            </div>
           </div>
 
           {/* Quick Links */}
           <div>
-            <h4 className="text-white font-semibold mb-4" style={{ fontFamily: 'var(--font-display)' }}>Hızlı Bağlantılar</h4>
-            <ul className="space-y-2.5">
-              <FooterLink href="/">Ana Sayfa</FooterLink>
-              <FooterLink href="/products">Ürünler</FooterLink>
-              <FooterLink href="/rfid">RFID Kart Okuma</FooterLink>
-              <FooterLink href="/seller">Satıcı Paneli</FooterLink>
-              <FooterLink href="/login">Giriş Yap</FooterLink>
+            <h3 className="font-bold text-dark-brown mb-6" style={{ fontFamily: 'var(--font-display)' }}>{t('footer.quickLinks')}</h3>
+            <ul className="space-y-3">
+              <FooterLink href="/">{t('nav.home')}</FooterLink>
+              <FooterLink href="/products">{t('nav.products')}</FooterLink>
+              <FooterLink href="/rfid">{t('nav.rfid')}</FooterLink>
+              <FooterLink href="/login">Satıcı Girişi</FooterLink>
             </ul>
           </div>
 
           {/* Categories */}
           <div>
-            <h4 className="text-white font-semibold mb-4" style={{ fontFamily: 'var(--font-display)' }}>Kategoriler</h4>
-            <ul className="space-y-2.5">
-              <FooterLink href="/products?category=Vazo">Vazolar</FooterLink>
-              <FooterLink href="/products?category=Halı">Halılar</FooterLink>
-              <FooterLink href="/products?category=Seramik">Seramikler</FooterLink>
-              <FooterLink href="/products?category=Çömlek">Çömlekler</FooterLink>
-              <FooterLink href="/products?category=Testi">Testiler</FooterLink>
-              <FooterLink href="/products?category=Tabak">Tabaklar</FooterLink>
+            <h3 className="font-bold text-dark-brown mb-6" style={{ fontFamily: 'var(--font-display)' }}>Kategoriler</h3>
+            <ul className="space-y-3">
+              <FooterLink href="/products?category=Seramik">Seramik</FooterLink>
+              <FooterLink href="/products?category=Halı">Halı & Kilim</FooterLink>
+              <FooterLink href="/products?category=Çömlek">Avanos Çömlekleri</FooterLink>
+              <FooterLink href="/products?category=Heykel">Heykel & Figür</FooterLink>
             </ul>
           </div>
 
           {/* Contact */}
           <div>
-            <h4 className="text-white font-semibold mb-4" style={{ fontFamily: 'var(--font-display)' }}>İletişim</h4>
-            <ul className="space-y-3">
-              <li className="flex items-start gap-2.5 text-sm text-stone">
-                <MapPin size={16} className="text-warm-orange mt-0.5 shrink-0" />
-                <span>Göreme, Nevşehir, Kapadokya, Türkiye</span>
+            <h3 className="font-bold text-dark-brown mb-6" style={{ fontFamily: 'var(--font-display)' }}>{t('footer.contact')}</h3>
+            <ul className="space-y-4">
+              <li className="flex items-start gap-3 text-sm text-earth">
+                <MapPin size={18} className="text-terracotta shrink-0 mt-0.5" />
+                <span>{t('footer.address')}</span>
               </li>
-              <li className="flex items-center gap-2.5 text-sm text-stone">
-                <Phone size={16} className="text-warm-orange shrink-0" />
-                <span>+90 384 271 00 00</span>
+              <li className="flex items-center gap-3 text-sm text-earth">
+                <Phone size={18} className="text-terracotta shrink-0" />
+                <span>+90 (384) 511 00 00</span>
               </li>
-              <li className="flex items-center gap-2.5 text-sm text-stone">
-                <Mail size={16} className="text-warm-orange shrink-0" />
-                <span>info@kapadokya-elsanatlari.com</span>
+              <li className="flex items-center gap-3 text-sm text-earth">
+                <Mail size={18} className="text-terracotta shrink-0" />
+                <span>hello@kapadokya.crafts</span>
               </li>
             </ul>
-            {/* Social */}
-            <div className="flex items-center gap-3 mt-5">
-              <SocialIcon icon={<Camera size={18} />} href="#" label="Instagram" />
-              <SocialIcon icon={<Globe size={18} />} href="#" label="Facebook" />
-              <SocialIcon icon={<Hash size={18} />} href="#" label="X" />
-            </div>
           </div>
         </div>
 
         {/* Bottom bar */}
         <div className="border-t border-stone/20 mt-10 pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-xs text-stone">
-            © 2026 Kapadokya El Sanatları. Tüm hakları saklıdır.
+            © {new Date().getFullYear()} Kapadokya El Sanatları. {t('footer.rights')}
           </p>
-          <p className="text-xs text-stone">
-            🇹🇷 Türkiye&apos;den sevgiyle yapılmıştır
-          </p>
+          <div className="flex items-center gap-6 text-sm text-stone">
+            <Link href="#" className="hover:text-terracotta transition-colors">Gizlilik Politikası</Link>
+            <Link href="#" className="hover:text-terracotta transition-colors">Kullanım Koşulları</Link>
+          </div>
         </div>
       </div>
     </footer>
@@ -101,7 +106,7 @@ function FooterLink({ href, children }) {
   );
 }
 
-function SocialIcon({ icon, href }) {
+function SocialLink({ icon, href }) {
   return (
     <a 
       href={href}

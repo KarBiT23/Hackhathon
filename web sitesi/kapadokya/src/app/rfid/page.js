@@ -9,7 +9,7 @@ import { carbonService } from '../../services/carbonService';
 import { currencyService } from '../../services/currencyService';
 import { formatPrice, formatDate, formatTime } from '../../utils/formatters';
 import DeliveryLocationSelector from '../../components/delivery/DeliveryLocationSelector';
-import { Wifi, Search, CreditCard, Package, User, Calendar, Clock, Hash, ArrowRight, AlertCircle, CheckCircle, Loader2, DollarSign, Route, Leaf, MapPin } from 'lucide-react';
+import { Wifi, Search, CreditCard, Package, User, Calendar, Clock, Hash, ArrowRight, AlertCircle, CheckCircle, Loader2, DollarSign, Route, Leaf, MapPin, Truck } from 'lucide-react';
 
 const DEMO_CARDS = [
   { id: 'rfid-001', label: 'Demo Kart 1 — Kırmızı Kil Vazo' },

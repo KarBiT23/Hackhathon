@@ -12,6 +12,7 @@ import { carbonService } from '../../../services/carbonService';
 import { currencyService } from '../../../services/currencyService';
 import DeliveryLocationSelector from '../../../components/delivery/DeliveryLocationSelector';
 import { formatPrice, CULTURAL_INFO_TEXT } from '../../../utils/formatters';
+import { useLanguage } from '../../../context/LanguageContext';
 import { 
   ShoppingCart, Heart, Share2, Video, Sparkles, MapPin, Award, 
   ChevronLeft, Camera, Globe, Hash as XIcon, MessageCircle, Copy, Check,
@@ -29,6 +30,7 @@ export default function ProductDetailPage() {
   const [showVideoModal, setShowVideoModal] = useState(false);
   const [videoMessage, setVideoMessage] = useState('');
   const [loading, setLoading] = useState(true);
+  const { t } = useLanguage();
 
   // Hackathon Modules State
   const [selectedCurrency, setSelectedCurrency] = useState('EUR');
@@ -130,9 +132,9 @@ export default function ProductDetailPage() {
       {/* Breadcrumb */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <div className="flex items-center gap-2 text-sm text-earth">
-          <Link href="/" className="hover:text-terracotta transition-colors">Ana Sayfa</Link>
+          <Link href="/" className="hover:text-terracotta transition-colors">{t('nav.home')}</Link>
           <span>/</span>
-          <Link href="/products" className="hover:text-terracotta transition-colors">Ürünler</Link>
+          <Link href="/products" className="hover:text-terracotta transition-colors">{t('nav.products')}</Link>
           <span>/</span>
           <span className="text-dark-brown font-medium">{product.name}</span>
         </div>
@@ -201,7 +203,7 @@ export default function ProductDetailPage() {
             <div className="flex flex-wrap gap-3">
               <Link href={`/checkout?product=${product.productId}`} className="btn-primary flex-1 justify-center text-lg py-3.5">
                 <ShoppingCart size={20} />
-                Satın Al
+                {t('product.buyNow')}
               </Link>
               <button className="btn-secondary px-4">
                 <Heart size={20} />
@@ -336,12 +338,12 @@ export default function ProductDetailPage() {
             <div className="bg-[#F5E6D3] rounded-2xl p-6 shadow-sm border border-stone/20">
               <div className="flex items-center gap-2 mb-4">
                 <DollarSign size={20} className="text-[#C65A2E]" />
-                <h3 className="text-lg font-bold text-[#3E2A1F]" style={{ fontFamily: 'var(--font-display)' }}>Canlı Kur ile Fiyat</h3>
+                <h3 className="text-lg font-bold text-[#3E2A1F]" style={{ fontFamily: 'var(--font-display)' }}>{t('cards.currencyTitle')}</h3>
               </div>
               <div className="space-y-2 text-sm text-[#5A3E2B]">
-                <div className="flex justify-between"><span>Ana Fiyat:</span> <span className="font-semibold text-[#C65A2E]">₺{product.price}</span></div>
+                <div className="flex justify-between"><span>{t('cards.basePrice')}:</span> <span className="font-semibold text-[#C65A2E]">₺{product.price}</span></div>
                 <div className="flex justify-between items-center">
-                  <span>Seçilen Para Birimi:</span>
+                  <span>{t('cards.selectedCurrency')}:</span>
                   <select 
                     className="bg-white border border-[#C65A2E]/30 rounded px-2 py-1 text-xs"
                     value={selectedCurrency}
@@ -352,22 +354,22 @@ export default function ProductDetailPage() {
                     <option value="GBP">GBP</option>
                   </select>
                 </div>
-                <div className="flex justify-between"><span>Kur Kaynağı:</span> <span>{currencyData?.source || 'TCMB EVDS'}</span></div>
+                <div className="flex justify-between"><span>{t('cards.currencySource')}:</span> <span>{currencyData?.source || 'TCMB EVDS'}</span></div>
                 {currencyData?.seriesCode && (
                   <div className="flex justify-between"><span>EVDS Seri Kodu:</span> <span>{currencyData.seriesCode}</span></div>
                 )}
-                <div className="flex justify-between"><span>Güncel Kur:</span> <span>1 {selectedCurrency} = {currencyData?.rate || 1} TL</span></div>
+                <div className="flex justify-between"><span>{t('cards.currentRate')}:</span> <span>1 {selectedCurrency} = {currencyData?.rate || 1} TL</span></div>
                 {currencyData?.lastUpdated && (
-                  <div className="flex justify-between"><span>Son Güncelleme:</span> <span>{currencyData.lastUpdated}</span></div>
+                  <div className="flex justify-between"><span>{t('cards.lastUpdated')}:</span> <span>{currencyData.lastUpdated}</span></div>
                 )}
                 <div className="flex justify-between mt-2 pt-2 border-t border-[#3E2A1F]/10">
-                  <span className="font-semibold">Yaklaşık Tutar:</span> 
+                  <span className="font-semibold">{t('cards.approxTotal')}:</span> 
                   <span className="font-bold text-lg text-[#C65A2E]">{(currencyData?.convertedPrice || product.price).toFixed(2)} {selectedCurrency}</span>
                 </div>
               </div>
               {currencyData?.isDemo && (
                 <p className="text-[10px] text-[#C65A2E] mt-4 leading-tight italic font-medium">
-                  Demo Modu: Döviz kuru prototip amaçlı gösterilmektedir. Gerçek kullanımda kur TCMB EVDS API üzerinden çekilecektir.
+                  {t('cards.currencyDemoNote')}
                 </p>
               )}
             </div>
@@ -385,7 +387,7 @@ export default function ProductDetailPage() {
             <div className="bg-[#F5E6D3] rounded-2xl p-6 shadow-sm border border-stone/20 flex flex-col">
               <div className="flex items-center gap-2 mb-4">
                 <Route size={20} className="text-[#C65A2E]" />
-                <h3 className="text-lg font-bold text-[#3E2A1F]" style={{ fontFamily: 'var(--font-display)' }}>Ürünün Yolculuğu</h3>
+                <h3 className="text-lg font-bold text-[#3E2A1F]" style={{ fontFamily: 'var(--font-display)' }}>{t('cards.journeyTitle')}</h3>
               </div>
               
               <div className="flex-1 flex flex-col justify-center mb-4">
@@ -405,17 +407,17 @@ export default function ProductDetailPage() {
               </div>
 
               <div className="space-y-2 text-sm text-[#5A3E2B]">
-                <div className="flex justify-between"><span>Üretim Yeri:</span> <span>{product.productionLocation || 'Avanos, Kapadokya'}</span></div>
-                <div className="flex justify-between"><span>Teslimat Noktası:</span> <span className="text-right truncate ml-4" title={deliveryData?.fullAddress}>{deliveryData ? deliveryData.fullAddress : 'İstanbul'}</span></div>
-                <div className="flex justify-between"><span>Veri Kaynağı:</span> <span className="text-xs text-right">{deliveryData?.dataSource || 'OpenStreetMap / Nominatim'}</span></div>
+                <div className="flex justify-between"><span>{t('cards.originLocation')}:</span> <span>{product.productionLocation || 'Avanos, Kapadokya'}</span></div>
+                <div className="flex justify-between"><span>{t('cards.destLocation')}:</span> <span className="text-right truncate ml-4" title={deliveryData?.fullAddress}>{deliveryData ? deliveryData.fullAddress : 'İstanbul'}</span></div>
+                <div className="flex justify-between"><span>{t('cards.dataSource')}:</span> <span className="text-xs text-right">{deliveryData?.dataSource || 'OpenStreetMap / Nominatim'}</span></div>
                 <div className="flex justify-between mt-2 pt-2 border-t border-[#3E2A1F]/10">
-                  <span className="font-semibold">Tahmini Rota:</span> 
+                  <span className="font-semibold">{t('cards.estRoute')}:</span> 
                   <span className="font-bold text-lg text-[#C65A2E]">{distanceKm} km</span>
                 </div>
               </div>
               {deliveryData?.isDemo && (
                 <p className="text-[10px] text-[#C65A2E] mt-4 leading-tight italic font-medium">
-                  Demo Modu: Teslimat mesafesi prototip amaçlı gösterilmektedir. Gerçek kullanımda konum ve mesafe bilgileri OpenStreetMap, Nominatim veya OpenRouteService üzerinden çekilecektir.
+                  {t('cards.journeyDemoNote')}
                 </p>
               )}
             </div>
@@ -424,23 +426,23 @@ export default function ProductDetailPage() {
             <div className="bg-[#F5E6D3] rounded-2xl p-6 shadow-sm border border-stone/20">
               <div className="flex items-center gap-2 mb-4">
                 <Leaf size={20} className="text-[#C65A2E]" />
-                <h3 className="text-lg font-bold text-[#3E2A1F]" style={{ fontFamily: 'var(--font-display)' }}>Sürdürülebilir Teslimat</h3>
+                <h3 className="text-lg font-bold text-[#3E2A1F]" style={{ fontFamily: 'var(--font-display)' }}>{t('cards.sustainabilityTitle')}</h3>
               </div>
               <div className="space-y-3 text-sm text-[#5A3E2B]">
                 <div className="flex justify-between items-center">
-                  <span>Taşıma Modu:</span>
+                  <span>{t('delivery.transportMode')}:</span>
                   <span className="font-medium bg-white px-2 py-1 rounded text-[#C65A2E]">{transportMode}</span>
                 </div>
-                <div className="flex justify-between"><span>Ürün Ağırlığı:</span> <span>{product.weightKg || 1.8} kg</span></div>
-                <div className="flex justify-between"><span>Emisyon Faktörü:</span> <span className="text-xs text-right">{carbonService.getEmissionFactor(transportMode)} kg CO₂ / ton-km</span></div>
+                <div className="flex justify-between"><span>{t('cards.productWeight')}:</span> <span>{product.weightKg || 1.8} kg</span></div>
+                <div className="flex justify-between"><span>{t('cards.emissionFactor')}:</span> <span className="text-xs text-right">{carbonService.getEmissionFactor(transportMode)} kg CO₂ / ton-km</span></div>
                 <div className="flex justify-between mt-2 pt-2 border-t border-[#3E2A1F]/10">
-                  <span className="font-semibold">Tahmini Karbon:</span> 
+                  <span className="font-semibold">{t('cards.estCarbon')}:</span> 
                   <span className="font-bold text-lg text-[#C65A2E]">{carbonFootprint} kg CO₂</span>
                 </div>
               </div>
               <div className="mt-4 bg-white/50 p-3 rounded-xl border border-[#3E2A1F]/10">
-                <p className="text-xs text-[#3E2A1F] font-medium mb-1">🌍 Doğa Dostu Seçim</p>
-                <p className="text-[10px] text-[#5A3E2B] leading-tight">Taşıma modu seçiminizle karbon ayak izinizi %30'a kadar azaltabilirsiniz.</p>
+                <p className="text-xs text-[#3E2A1F] font-medium mb-1">🌍 {t('cards.ecoChoice')}</p>
+                <p className="text-[10px] text-[#5A3E2B] leading-tight">{t('cards.ecoDesc')}</p>
               </div>
             </div>
           </div>
