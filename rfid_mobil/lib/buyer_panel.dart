@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'lang.dart';
 
 class BuyerPanel extends StatefulWidget {
   const BuyerPanel({super.key});
@@ -10,7 +11,9 @@ class BuyerPanel extends StatefulWidget {
 
 class _BuyerPanelState extends State<BuyerPanel> {
   int selectedIndex = 0;
+
   final List<Map<String, dynamic>> favoriteProducts = [];
+  final List<Map<String, dynamic>> cartProducts = [];
 
   bool isFavorite(Map<String, dynamic> product) {
     return favoriteProducts.any((item) => item["id"] == product["id"]);
@@ -26,10 +29,102 @@ class _BuyerPanelState extends State<BuyerPanel> {
     });
   }
 
+  void addToCart(Map<String, dynamic> product) {
+    setState(() {
+      cartProducts.add(product);
+    });
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(Lang.t("addedCart"))));
+  }
+
+  double get totalPrice {
+    double total = 0;
+
+    for (var item in cartProducts) {
+      final price = double.tryParse(item["fiyat"].toString()) ?? 0;
+      total += price;
+    }
+
+    return total;
+  }
+
+  void showPaymentDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(Lang.t("paymentTitle")),
+          content: Text(
+            "${Lang.t("paymentTitle")}: $totalPrice TL\n\n${Lang.t("paymentQuestion")}",
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(Lang.t("cancel")),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  cartProducts.clear();
+                });
+
+                Navigator.pop(context);
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(Lang.t("paymentSuccess"))),
+                );
+              },
+              child: Text(Lang.t("pay")),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void openProductDetail(BuildContext context, Map<String, dynamic> data) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => ProductDetailPage(data: data)),
+      MaterialPageRoute(
+        builder: (context) =>
+            ProductDetailPage(data: data, onAddToCart: () => addToCart(data)),
+      ),
+    );
+  }
+
+  void showLanguageDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(Lang.t("language")),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                title: Text(Lang.t("turkish")),
+                onTap: () {
+                  setState(() {
+                    Lang.current = "tr";
+                  });
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                title: Text(Lang.t("english")),
+                onTap: () {
+                  setState(() {
+                    Lang.current = "en";
+                  });
+                  Navigator.pop(context);
+                },
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -43,12 +138,12 @@ class _BuyerPanelState extends State<BuyerPanel> {
           child: ListView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.all(10),
-            children: const [
-              CategoryChip(title: "Kilim", selected: true),
-              CategoryChip(title: "Halı"),
-              CategoryChip(title: "Çömlek"),
-              CategoryChip(title: "Vazo"),
-              CategoryChip(title: "Seramik Tabak"),
+            children: [
+              CategoryChip(title: Lang.t("rug"), selected: true),
+              CategoryChip(title: Lang.t("carpet")),
+              CategoryChip(title: Lang.t("pottery")),
+              CategoryChip(title: Lang.t("vase")),
+              CategoryChip(title: Lang.t("ceramicPlate")),
             ],
           ),
         ),
@@ -61,14 +156,14 @@ class _BuyerPanelState extends State<BuyerPanel> {
             ),
             borderRadius: BorderRadius.circular(18),
           ),
-          child: const Row(
+          child: Row(
             children: [
-              Icon(Icons.storefront, color: Colors.white, size: 48),
-              SizedBox(width: 14),
+              const Icon(Icons.storefront, color: Colors.white, size: 48),
+              const SizedBox(width: 14),
               Expanded(
                 child: Text(
-                  "Nevşehir yöresel ürünlerini keşfet",
-                  style: TextStyle(
+                  Lang.t("discover"),
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 21,
                     fontWeight: FontWeight.bold,
@@ -83,7 +178,7 @@ class _BuyerPanelState extends State<BuyerPanel> {
             stream: stream,
             builder: (context, snapshot) {
               if (snapshot.hasError) {
-                return const Center(child: Text("Ürünler yüklenemedi"));
+                return Center(child: Text(Lang.t("productsError")));
               }
 
               if (!snapshot.hasData) {
@@ -93,7 +188,7 @@ class _BuyerPanelState extends State<BuyerPanel> {
               final docs = snapshot.data!.docs;
 
               if (docs.isEmpty) {
-                return const Center(child: Text("Henüz ürün yok"));
+                return Center(child: Text(Lang.t("noProduct")));
               }
 
               return GridView.builder(
@@ -101,7 +196,7 @@ class _BuyerPanelState extends State<BuyerPanel> {
                 itemCount: docs.length,
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
-                  childAspectRatio: 0.65,
+                  childAspectRatio: 0.58,
                   crossAxisSpacing: 12,
                   mainAxisSpacing: 12,
                 ),
@@ -113,6 +208,7 @@ class _BuyerPanelState extends State<BuyerPanel> {
                     data: data,
                     isFavorite: isFavorite(data),
                     onFavoriteTap: () => toggleFavorite(data),
+                    onAddToCart: () => addToCart(data),
                     onTap: () => openProductDetail(context, data),
                   );
                 },
@@ -124,9 +220,18 @@ class _BuyerPanelState extends State<BuyerPanel> {
     );
   }
 
+  Widget buildRfidPage() {
+    return Center(
+      child: Text(
+        Lang.t("rfidPage"),
+        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+      ),
+    );
+  }
+
   Widget buildFavoritesPage() {
     if (favoriteProducts.isEmpty) {
-      return const Center(child: Text("Favorilere ürün eklenmedi"));
+      return Center(child: Text(Lang.t("noFavorite")));
     }
 
     return GridView.builder(
@@ -134,7 +239,7 @@ class _BuyerPanelState extends State<BuyerPanel> {
       itemCount: favoriteProducts.length,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        childAspectRatio: 0.65,
+        childAspectRatio: 0.58,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
       ),
@@ -145,17 +250,313 @@ class _BuyerPanelState extends State<BuyerPanel> {
           data: data,
           isFavorite: true,
           onFavoriteTap: () => toggleFavorite(data),
+          onAddToCart: () => addToCart(data),
           onTap: () => openProductDetail(context, data),
         );
       },
     );
   }
 
+  Widget buildPaymentPage() {
+    if (cartProducts.isEmpty) {
+      return Center(child: Text(Lang.t("emptyCart")));
+    }
+
+    return Column(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Text(
+                    Lang.t("securePayment"),
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                paymentBox(
+                  title: Lang.t("deliveryInfo"),
+                  children: [
+                    radioRow(Lang.t("addressDelivery"), true),
+                    const SizedBox(height: 10),
+                    inputBox(
+                      Lang.t("deliveryAddress"),
+                      "Yurt / Nevşehir Merkez",
+                    ),
+                    checkRow(Lang.t("sameInvoice"), true),
+                    const Divider(),
+                    radioRow(Lang.t("pickupPoint"), false),
+                    const SizedBox(height: 6),
+                    Text(
+                      Lang.t("pickupDiscount"),
+                      style: const TextStyle(color: Colors.orange),
+                    ),
+                  ],
+                ),
+
+                paymentBox(
+                  title: Lang.t("paymentOptions"),
+                  children: [radioRow(Lang.t("cardPayment"), true)],
+                ),
+
+                paymentBox(
+                  title: Lang.t("cardInfo"),
+                  children: [
+                    inputBox(Lang.t("cardName"), "Ad Soyad"),
+                    inputBox(Lang.t("cardNumber"), "0000 0000 0000 0000"),
+                    Row(
+                      children: [
+                        Expanded(child: inputBox("SKT", "AA/YY")),
+                        const SizedBox(width: 10),
+                        Expanded(child: inputBox("CVV", "123")),
+                      ],
+                    ),
+                    checkRow("3D Secure", false),
+                  ],
+                ),
+
+                paymentBox(
+                  title: Lang.t("installments"),
+                  children: [
+                    radioRow(
+                      Lang.t("singlePayment"),
+                      true,
+                      price: "$totalPrice TL",
+                    ),
+                  ],
+                ),
+
+                checkRow(Lang.t("contractCheck"), false),
+
+                paymentBox(
+                  title: Lang.t("contracts"),
+                  children: [
+                    Text(
+                      Lang.t("salesContract"),
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      "MESAFELİ SATIŞ SÖZLEŞMESİ\n\n1. TARAFLAR\n\nBu bölüm örnek sözleşme metnidir.",
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      Lang.t("infoForm"),
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      "ÖN BİLGİLENDİRME FORMU\n\n1. TARAFLAR VE KONU\n\nBu bölüm örnek bilgilendirme metnidir.",
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.all(14),
+          color: Colors.white,
+          child: Row(
+            children: [
+              Container(
+                height: 52,
+                width: 130,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.orange),
+                  borderRadius: const BorderRadius.horizontal(
+                    left: Radius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  "$totalPrice TL",
+                  style: const TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: SizedBox(
+                  height: 52,
+                  child: ElevatedButton(
+                    onPressed: showPaymentDialog,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange,
+                      foregroundColor: Colors.white,
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.horizontal(
+                          right: Radius.circular(12),
+                        ),
+                      ),
+                    ),
+                    child: Text(
+                      Lang.t("confirmFinish"),
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget paymentBox({required String title, required List<Widget> children}) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.black12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 14),
+          ...children,
+        ],
+      ),
+    );
+  }
+
+  Widget radioRow(String text, bool selected, {String? price}) {
+    return Row(
+      children: [
+        Icon(
+          selected ? Icons.radio_button_checked : Icons.radio_button_off,
+          color: selected ? Colors.orange : Colors.grey,
+        ),
+        const SizedBox(width: 10),
+        Expanded(child: Text(text, style: const TextStyle(fontSize: 16))),
+        if (price != null)
+          Text(
+            price,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+      ],
+    );
+  }
+
+  Widget checkRow(String text, bool checked) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            checked ? Icons.check_box : Icons.check_box_outline_blank,
+            color: checked ? Colors.orange : Colors.grey,
+          ),
+          const SizedBox(width: 8),
+          Expanded(child: Text(text, style: const TextStyle(fontSize: 15))),
+        ],
+      ),
+    );
+  }
+
+  Widget inputBox(String label, String hint) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: TextField(
+        decoration: InputDecoration(
+          labelText: label,
+          hintText: hint,
+          filled: true,
+          fillColor: const Color(0xFFF7F7F7),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      ),
+    );
+  }
+
+  Widget buildAccountPage() {
+    return Padding(
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        children: [
+          const CircleAvatar(
+            radius: 48,
+            backgroundColor: Colors.orange,
+            child: Icon(Icons.person, size: 58, color: Colors.white),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            Lang.t("userAccount"),
+            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 24),
+
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.language),
+              title: Text(Lang.t("language")),
+              trailing: const Icon(Icons.arrow_forward_ios),
+              onTap: showLanguageDialog,
+            ),
+          ),
+
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.person),
+              title: Text(Lang.t("nameSurname")),
+              subtitle: Text(Lang.t("guestUser")),
+            ),
+          ),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.email),
+              title: Text(Lang.t("email")),
+              subtitle: const Text("mail@example.com"),
+            ),
+          ),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.history),
+              title: Text(Lang.t("orderHistory")),
+              trailing: const Icon(Icons.arrow_forward_ios),
+              onTap: () {},
+            ),
+          ),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.logout, color: Colors.red),
+              title: Text(Lang.t("logout")),
+              onTap: () {},
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget buildPage() {
     if (selectedIndex == 0) return buildHomePage();
+    if (selectedIndex == 1) return buildRfidPage();
     if (selectedIndex == 2) return buildFavoritesPage();
+    if (selectedIndex == 3) return buildPaymentPage();
+    if (selectedIndex == 4) return buildAccountPage();
 
-    return const Center(child: Text("Bu sayfa henüz hazırlanmadı"));
+    return Center(child: Text(Lang.t("prepared")));
   }
 
   @override
@@ -172,17 +573,17 @@ class _BuyerPanelState extends State<BuyerPanel> {
             color: const Color(0xFFF1F1F1),
             borderRadius: BorderRadius.circular(22),
           ),
-          child: const Row(
+          child: Row(
             children: [
-              Icon(Icons.search, color: Colors.orange),
-              SizedBox(width: 8),
+              const Icon(Icons.search, color: Colors.orange),
+              const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  "Marka, ürün veya kategori...",
-                  style: TextStyle(color: Colors.black54, fontSize: 15),
+                  Lang.t("search"),
+                  style: const TextStyle(color: Colors.black54, fontSize: 15),
                 ),
               ),
-              Icon(Icons.camera_alt_outlined, color: Colors.black54),
+              const Icon(Icons.camera_alt_outlined, color: Colors.black54),
             ],
           ),
         ),
@@ -198,18 +599,27 @@ class _BuyerPanelState extends State<BuyerPanel> {
         selectedItemColor: Colors.orange,
         unselectedItemColor: Colors.black54,
         type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Anasayfa"),
-          BottomNavigationBarItem(icon: Icon(Icons.nfc), label: "RFID"),
+        items: [
           BottomNavigationBarItem(
-            icon: Icon(Icons.favorite_border),
-            label: "Favorilerim",
+            icon: const Icon(Icons.home),
+            label: Lang.t("home"),
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.shopping_cart),
-            label: "Sepet",
+            icon: const Icon(Icons.nfc),
+            label: Lang.t("rfid"),
           ),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: "Hesap"),
+          BottomNavigationBarItem(
+            icon: const Icon(Icons.favorite_border),
+            label: Lang.t("favorites"),
+          ),
+          BottomNavigationBarItem(
+            icon: const Icon(Icons.payment),
+            label: Lang.t("payment"),
+          ),
+          BottomNavigationBarItem(
+            icon: const Icon(Icons.person),
+            label: Lang.t("account"),
+          ),
         ],
       ),
     );
@@ -240,10 +650,42 @@ class CategoryChip extends StatelessWidget {
   }
 }
 
+String fixGoogleDriveImageUrl(String imageUrl) {
+  if (imageUrl.isEmpty) return imageUrl;
+
+  if (!imageUrl.contains("drive.google.com")) {
+    return imageUrl;
+  }
+
+  final uri = Uri.tryParse(imageUrl);
+
+  if (uri == null) {
+    return imageUrl;
+  }
+
+  String? fileId;
+
+  if (uri.pathSegments.contains("d")) {
+    final index = uri.pathSegments.indexOf("d");
+    if (index + 1 < uri.pathSegments.length) {
+      fileId = uri.pathSegments[index + 1];
+    }
+  }
+
+  fileId ??= uri.queryParameters["id"];
+
+  if (fileId == null || fileId.isEmpty) {
+    return imageUrl;
+  }
+
+  return "https://drive.google.com/uc?export=view&id=$fileId";
+}
+
 class ProductCard extends StatelessWidget {
   final Map<String, dynamic> data;
   final bool isFavorite;
   final VoidCallback onFavoriteTap;
+  final VoidCallback onAddToCart;
   final VoidCallback onTap;
 
   const ProductCard({
@@ -251,16 +693,15 @@ class ProductCard extends StatelessWidget {
     required this.data,
     required this.isFavorite,
     required this.onFavoriteTap,
+    required this.onAddToCart,
     required this.onTap,
   });
 
   Widget productImage(String imageUrl) {
+    imageUrl = fixGoogleDriveImageUrl(imageUrl);
+
     if (imageUrl.isEmpty) {
-      return Container(
-        height: 150,
-        color: const Color(0xFFF1F1F1),
-        child: const Icon(Icons.image_not_supported),
-      );
+      imageUrl = "assets/vase.jpg";
     }
 
     if (imageUrl.startsWith("assets/")) {
@@ -269,6 +710,13 @@ class ProductCard extends StatelessWidget {
         height: 150,
         width: double.infinity,
         fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            height: 150,
+            color: const Color(0xFFF1F1F1),
+            child: const Icon(Icons.image_not_supported),
+          );
+        },
       );
     }
 
@@ -277,6 +725,15 @@ class ProductCard extends StatelessWidget {
       height: 150,
       width: double.infinity,
       fit: BoxFit.cover,
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+
+        return Container(
+          height: 150,
+          color: const Color(0xFFF1F1F1),
+          child: const Center(child: CircularProgressIndicator()),
+        );
+      },
       errorBuilder: (context, error, stackTrace) {
         return Container(
           height: 150,
@@ -292,7 +749,12 @@ class ProductCard extends StatelessWidget {
     final name = data["isim"]?.toString() ?? "";
     final category = data["kategori"]?.toString() ?? "";
     final price = data["fiyat"]?.toString() ?? "";
-    final imageUrl = data["imageUrl"]?.toString() ?? "";
+
+    String imageUrl = data["imageUrl"]?.toString() ?? "";
+
+    if (imageUrl.isEmpty) {
+      imageUrl = "assets/vase.jpg";
+    }
 
     return GestureDetector(
       onTap: onTap,
@@ -361,10 +823,19 @@ class ProductCard extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    "Nevşehir yöresel ürün",
-                    style: TextStyle(color: Colors.orange, fontSize: 12),
+                  const SizedBox(height: 6),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 34,
+                    child: ElevatedButton(
+                      onPressed: onAddToCart,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.orange,
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.zero,
+                      ),
+                      child: Text(Lang.t("addToCart")),
+                    ),
                   ),
                 ],
               ),
@@ -378,16 +849,35 @@ class ProductCard extends StatelessWidget {
 
 class ProductDetailPage extends StatelessWidget {
   final Map<String, dynamic> data;
+  final VoidCallback onAddToCart;
 
-  const ProductDetailPage({super.key, required this.data});
+  const ProductDetailPage({
+    super.key,
+    required this.data,
+    required this.onAddToCart,
+  });
 
   Widget imageWidget(String imageUrl) {
+    imageUrl = fixGoogleDriveImageUrl(imageUrl);
+
+    if (imageUrl.isEmpty) {
+      imageUrl = "assets/vase.jpg";
+    }
+
     if (imageUrl.startsWith("assets/")) {
       return Image.asset(
         imageUrl,
         width: double.infinity,
         height: 280,
         fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            width: double.infinity,
+            height: 280,
+            color: const Color(0xFFF1F1F1),
+            child: const Icon(Icons.image_not_supported, size: 60),
+          );
+        },
       );
     }
 
@@ -396,6 +886,24 @@ class ProductDetailPage extends StatelessWidget {
       width: double.infinity,
       height: 280,
       fit: BoxFit.cover,
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+
+        return Container(
+          width: double.infinity,
+          height: 280,
+          color: const Color(0xFFF1F1F1),
+          child: const Center(child: CircularProgressIndicator()),
+        );
+      },
+      errorBuilder: (context, error, stackTrace) {
+        return Container(
+          width: double.infinity,
+          height: 280,
+          color: const Color(0xFFF1F1F1),
+          child: const Icon(Icons.image_not_supported, size: 60),
+        );
+      },
     );
   }
 
@@ -407,7 +915,12 @@ class ProductDetailPage extends StatelessWidget {
     final rfid = data["rfidId"]?.toString() ?? "";
     final description = data["aciklama"]?.toString() ?? "";
     final video = data["videoUrl"]?.toString() ?? "";
-    final imageUrl = data["imageUrl"]?.toString() ?? "";
+
+    String imageUrl = data["imageUrl"]?.toString() ?? "";
+
+    if (imageUrl.isEmpty) {
+      imageUrl = "assets/vase.jpg";
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFFF6F6F6),
@@ -449,27 +962,44 @@ class ProductDetailPage extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  Text("Kategori: $category"),
+                  Text("${Lang.t("category")}: $category"),
                   const SizedBox(height: 6),
                   Text("RFID: $rfid"),
                   const SizedBox(height: 16),
-                  const Text(
-                    "Ürün Açıklaması",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  Text(
+                    Lang.t("productDescription"),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(description),
                   if (video.isNotEmpty) ...[
                     const SizedBox(height: 16),
-                    const Text(
-                      "Video Bilgisi",
-                      style: TextStyle(
+                    Text(
+                      Lang.t("videoInfo"),
+                      style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     Text(video),
                   ],
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton.icon(
+                      onPressed: onAddToCart,
+                      icon: const Icon(Icons.shopping_cart),
+                      label: Text(Lang.t("addToCart")),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.orange,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),

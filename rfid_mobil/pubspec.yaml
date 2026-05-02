@@ -20,15 +20,6 @@ dependencies:
   # 🔥 NFC
   nfc_manager: ^4.2.1
 
-dependencies:
-  flutter:
-    sdk: flutter
-
-  cupertino_icons: ^1.0.8
-  firebase_core: ^3.15.2
-  cloud_firestore: ^5.6.12
-  nfc_manager: ^4.2.1
-
 flutter:
   uses-material-design: true
 

@@ -3,28 +3,24 @@ import 'package:firebase_core/firebase_core.dart';
 
 import 'User_Panel.dart';
 import 'buyer_panel.dart';
+import 'lang.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp(
-    options: const FirebaseOptions(
-      apiKey: "AIzaSyDl0eJGYCitTx_y4wl3oAED9JOk5M7HYws",
-      authDomain: "hackathon-1924a.firebaseapp.com",
-      projectId: "hackathon-1924a",
-      storageBucket: "hackathon-1924a.firebasestorage.app",
-      messagingSenderId: "796305642513",
-      appId: "1:796305642513:web:d1e2f266cbd3b0727dcdb0",
-      measurementId: "G-S44PMC8J66",
-    ),
-  );
+  await Firebase.initializeApp(); // 🔥 SADECE BU
 
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return const MaterialApp(
@@ -60,10 +56,54 @@ class _LoginPanelState extends State<LoginPanel> {
         MaterialPageRoute(builder: (context) => const BuyerPanel()),
       );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Kullanıcı adı veya şifre hatalı")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(Lang.t("loginError"))));
     }
+  }
+
+  // 🔥 DÜZELTİLMİŞ DİL SEÇME
+  void showLanguageDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
+          ),
+          title: Text(Lang.t("selectLanguage")),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: Lang.current == "tr"
+                    ? const Icon(Icons.check, color: Colors.green)
+                    : const SizedBox(width: 24),
+                title: Text(Lang.t("turkish")),
+                onTap: () {
+                  setState(() {
+                    Lang.current = "tr";
+                  });
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                leading: Lang.current == "en"
+                    ? const Icon(Icons.check, color: Colors.green)
+                    : const SizedBox(width: 24),
+                title: Text(Lang.t("english")),
+                onTap: () {
+                  setState(() {
+                    Lang.current = "en";
+                  });
+                  Navigator.pop(context);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -76,6 +116,19 @@ class _LoginPanelState extends State<LoginPanel> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
+
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.language, color: Colors.white),
+            onPressed: showLanguageDialog,
+          ),
+        ],
+      ),
+
       body: Stack(
         children: [
           Positioned.fill(
@@ -84,6 +137,7 @@ class _LoginPanelState extends State<LoginPanel> {
           Positioned.fill(
             child: Container(color: Colors.black.withOpacity(0.25)),
           ),
+
           SafeArea(
             child: Center(
               child: Padding(
@@ -98,30 +152,36 @@ class _LoginPanelState extends State<LoginPanel> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       const Icon(Icons.nfc, size: 60, color: Color(0xFF8B3E20)),
+
                       const SizedBox(height: 20),
+
                       TextField(
                         controller: usernameController,
                         decoration: InputDecoration(
-                          labelText: "Kullanıcı Adı",
+                          labelText: Lang.t("username"),
                           prefixIcon: const Icon(Icons.person),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
                         ),
                       ),
+
                       const SizedBox(height: 16),
+
                       TextField(
                         controller: passwordController,
                         obscureText: true,
                         decoration: InputDecoration(
-                          labelText: "Şifre",
+                          labelText: Lang.t("password"),
                           prefixIcon: const Icon(Icons.lock),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
                         ),
                       ),
+
                       const SizedBox(height: 24),
+
                       SizedBox(
                         width: double.infinity,
                         height: 50,
@@ -131,7 +191,7 @@ class _LoginPanelState extends State<LoginPanel> {
                             backgroundColor: const Color(0xFFB85C38),
                             foregroundColor: Colors.white,
                           ),
-                          child: const Text("Giriş Yap"),
+                          child: Text(Lang.t("login")),
                         ),
                       ),
                     ],

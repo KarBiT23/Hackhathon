@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:nfc_manager/nfc_manager.dart';
 
 class UserPanel extends StatefulWidget {
   const UserPanel({super.key});
@@ -14,8 +15,53 @@ class _UserPanelState extends State<UserPanel> {
   final priceController = TextEditingController();
   final rfidIdController = TextEditingController();
   final descriptionController = TextEditingController();
-  final videoController = TextEditingController();
   final imageController = TextEditingController();
+
+  final cargoTypeController = TextEditingController();
+  final sallerLocationController = TextEditingController();
+  final weightKgController = TextEditingController();
+  final capacityController = TextEditingController();
+
+  Future<void> startNfcRead() async {
+    final isAvailable =
+        await NfcManager.instance.checkAvailability() ==
+        NfcAvailability.enabled;
+
+    if (!isAvailable) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Bu cihazda NFC desteklenmiyor")),
+      );
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("RFID / NFC kartı telefona yaklaştırın")),
+    );
+
+    NfcManager.instance.startSession(
+      pollingOptions: {NfcPollingOption.iso14443, NfcPollingOption.iso15693},
+      onDiscovered: (NfcTag tag) async {
+        final String tagId = tag.toString();
+
+        setState(() {
+          rfidIdController.text = tagId;
+        });
+
+        await NfcManager.instance.stopSession();
+      },
+    );
+  }
+
+  String fixImagePath(String value) {
+    String image = value.trim().replaceAll("\\", "/");
+
+    final assetIndex = image.toLowerCase().indexOf("assets/");
+    if (assetIndex != -1) {
+      image = image.substring(assetIndex);
+    }
+
+    return image;
+  }
 
   Future<void> addProduct() async {
     final name = productNameController.text.trim();
@@ -23,26 +69,47 @@ class _UserPanelState extends State<UserPanel> {
     final price = priceController.text.trim();
     final rfid = rfidIdController.text.trim();
     final description = descriptionController.text.trim();
-    final video = videoController.text.trim();
-    final image = imageController.text.trim();
+    final image = fixImagePath(imageController.text);
 
-    if (name.isEmpty || price.isEmpty || rfid.isEmpty || image.isEmpty) {
+    final cargoType = cargoTypeController.text.trim();
+    final sallerLocation = sallerLocationController.text.trim();
+    final weightKg = double.tryParse(weightKgController.text.trim()) ?? 0;
+    final capacity = int.tryParse(capacityController.text.trim()) ?? 0;
+    final fiyat = double.tryParse(price) ?? 0;
+
+    if (name.isEmpty || rfid.isEmpty || image.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Ürün adı, RFID ve resim boş olamaz")),
+      );
+      return;
+    }
+
+    final existingRfid = await FirebaseFirestore.instance
+        .collection("Urunler")
+        .where("RFID", isEqualTo: rfid)
+        .limit(1)
+        .get();
+
+    if (existingRfid.docs.isNotEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("Ürün adı, fiyat, RFID ve resim boş olamaz"),
+          content: Text("Bu RFID / NFC zaten başka üründe kayıtlı"),
         ),
       );
       return;
     }
 
     await FirebaseFirestore.instance.collection("Urunler").add({
-      "isim": name,
-      "kategori": category.isEmpty ? "Yöresel Ürün" : category,
-      "fiyat": price,
-      "rfidId": rfid,
-      "aciklama": description,
-      "videoUrl": video,
+      "CargoType": cargoType,
+      "Category": category,
+      "Explanation": description,
+      "RFID": rfid,
+      "SallerLocation": sallerLocation,
+      "WeightKg": weightKg,
+      "capacity": capacity,
+      "fiyat": fiyat,
       "imageUrl": image,
+      "isim": name,
       "createdAt": FieldValue.serverTimestamp(),
     });
 
@@ -51,12 +118,15 @@ class _UserPanelState extends State<UserPanel> {
     priceController.clear();
     rfidIdController.clear();
     descriptionController.clear();
-    videoController.clear();
     imageController.clear();
+    cargoTypeController.clear();
+    sallerLocationController.clear();
+    weightKgController.clear();
+    capacityController.clear();
 
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(const SnackBar(content: Text("Ürün Firebase'e kaydedildi")));
+    ).showSnackBar(const SnackBar(content: Text("Ürün başarıyla kaydedildi")));
   }
 
   Widget field({
@@ -65,12 +135,14 @@ class _UserPanelState extends State<UserPanel> {
     required IconData icon,
     String? hint,
     int maxLines = 1,
+    TextInputType keyboardType = TextInputType.text,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: TextField(
         controller: controller,
         maxLines: maxLines,
+        keyboardType: keyboardType,
         decoration: InputDecoration(
           labelText: label,
           hintText: hint,
@@ -88,8 +160,16 @@ class _UserPanelState extends State<UserPanel> {
     priceController.dispose();
     rfidIdController.dispose();
     descriptionController.dispose();
-    videoController.dispose();
     imageController.dispose();
+    cargoTypeController.dispose();
+    sallerLocationController.dispose();
+    weightKgController.dispose();
+    capacityController.dispose();
+
+    try {
+      NfcManager.instance.stopSession();
+    } catch (_) {}
+
     super.dispose();
   }
 
@@ -114,50 +194,86 @@ class _UserPanelState extends State<UserPanel> {
             children: [
               field(
                 controller: productNameController,
-                label: "Ürün adı",
+                label: "İsim",
                 icon: Icons.inventory_2,
               ),
               field(
                 controller: categoryController,
-                label: "Kategori",
+                label: "Category",
                 hint: "Kilim, Halı, Çömlek, Vazo...",
                 icon: Icons.category,
               ),
               field(
-                controller: priceController,
-                label: "Fiyat",
-                hint: "850",
-                icon: Icons.payments,
-              ),
-              field(
-                controller: rfidIdController,
-                label: "RFID / NFC ID",
-                hint: "RFID001",
-                icon: Icons.nfc,
-              ),
-              field(
                 controller: descriptionController,
-                label: "Ürün açıklaması",
+                label: "Explanation",
                 icon: Icons.description,
                 maxLines: 3,
               ),
               field(
-                controller: videoController,
-                label: "Video linki",
-                icon: Icons.video_library,
+                controller: rfidIdController,
+                label: "RFID",
+                hint: "RFID001",
+                icon: Icons.nfc,
+              ),
+
+              SizedBox(
+                width: double.infinity,
+                height: 46,
+                child: ElevatedButton.icon(
+                  onPressed: startNfcRead,
+                  icon: const Icon(Icons.nfc),
+                  label: const Text("RFID / NFC Oku"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              field(
+                controller: cargoTypeController,
+                label: "CargoType",
+                hint: "Kargo tipi",
+                icon: Icons.local_shipping,
+              ),
+              field(
+                controller: sallerLocationController,
+                label: "SallerLocation",
+                hint: "Satıcı konumu",
+                icon: Icons.location_on,
+              ),
+              field(
+                controller: weightKgController,
+                label: "WeightKg",
+                hint: "0",
+                icon: Icons.monitor_weight,
+                keyboardType: TextInputType.number,
+              ),
+              field(
+                controller: capacityController,
+                label: "capacity",
+                hint: "0",
+                icon: Icons.scale,
+                keyboardType: TextInputType.number,
+              ),
+              field(
+                controller: priceController,
+                label: "fiyat",
+                hint: "850",
+                icon: Icons.payments,
+                keyboardType: TextInputType.number,
               ),
               field(
                 controller: imageController,
-                label: "Resim yolu",
-                hint: "assets/Pot.jpg",
+                label: "imageUrl",
+                hint: "assets/bowl.jpeg",
                 icon: Icons.image,
               ),
-              const SizedBox(height: 8),
-              const Text(
-                "Örnek resim yolları:\nassets/bowl.jpeg\nassets/Pot.jpg\nassets/rug.jpeg\nassets/scatter rug.jpeg\nassets/vase.jpg",
-                style: TextStyle(color: Colors.black54),
-              ),
+
               const SizedBox(height: 16),
+
               SizedBox(
                 width: double.infinity,
                 height: 50,
