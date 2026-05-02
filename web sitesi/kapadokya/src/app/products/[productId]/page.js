@@ -16,7 +16,7 @@ import { useLanguage } from '../../../context/LanguageContext';
 import { 
   ShoppingCart, Heart, Share2, Video, Sparkles, MapPin, Award, 
   ChevronLeft, Camera, Globe, Hash as XIcon, MessageCircle, Copy, Check,
-  Film, AlertCircle, User, Clock, Palette, Hammer, Leaf, DollarSign, Route, Truck
+  Film, AlertCircle, User, Clock, Palette, Hammer, Leaf, DollarSign, Route, Truck, RefreshCw
 } from 'lucide-react';
 
 export default function ProductDetailPage() {
@@ -35,6 +35,7 @@ export default function ProductDetailPage() {
   // Hackathon Modules State
   const [selectedCurrency, setSelectedCurrency] = useState('EUR');
   const [currencyData, setCurrencyData] = useState(null);
+  const [isCurrencyUpdating, setIsCurrencyUpdating] = useState(false);
   const [transportMode, setTransportMode] = useState('Kara (TIR)');
   const [distanceKm, setDistanceKm] = useState(0);
   const [carbonFootprint, setCarbonFootprint] = useState(0);
@@ -74,15 +75,26 @@ export default function ProductDetailPage() {
     setDeliveryData({ ...routeInfo, isDemo });
   };
 
-  // Recalculate currency when selectedCurrency changes
+  // Recalculate currency when selectedCurrency changes and poll every 15 seconds
   useEffect(() => {
-    async function updateCurrency() {
+    async function updateCurrency(forceRefresh = false) {
       if (product) {
-        const data = await currencyService.convertTRYPrice(product.price, selectedCurrency);
+        if (forceRefresh) setIsCurrencyUpdating(true);
+        const data = await currencyService.convertTRYPrice(product.price, selectedCurrency, forceRefresh);
         setCurrencyData(data);
+        if (forceRefresh) setIsCurrencyUpdating(false);
       }
     }
-    updateCurrency();
+    
+    // Initial fetch
+    updateCurrency(false);
+
+    // Poll every 15 seconds
+    const interval = setInterval(() => {
+      updateCurrency(true);
+    }, 15000);
+
+    return () => clearInterval(interval);
   }, [selectedCurrency, product]);
 
   const handleAIVideo = async () => {
@@ -249,8 +261,22 @@ export default function ProductDetailPage() {
               </div>
             )}
 
-            {/* Material & Technique */}
+            {/* Specs Grid */}
             <div className="grid grid-cols-2 gap-4">
+              <div className="bg-card rounded-xl p-4 border border-cream">
+                <div className="flex items-center gap-2 mb-2">
+                  <User size={16} className="text-terracotta" />
+                  <span className="text-xs font-semibold text-dark-brown uppercase tracking-wide">Üreten Kişi</span>
+                </div>
+                <p className="text-sm text-earth font-medium">{product.artisanName || 'Bilinmeyen Usta'}</p>
+              </div>
+              <div className="bg-card rounded-xl p-4 border border-cream">
+                <div className="flex items-center gap-2 mb-2">
+                  <MapPin size={16} className="text-terracotta" />
+                  <span className="text-xs font-semibold text-dark-brown uppercase tracking-wide">Üretim Yeri</span>
+                </div>
+                <p className="text-sm text-earth font-medium">{product.productionLocation || 'Avanos, Kapadokya'}</p>
+              </div>
               <div className="bg-card rounded-xl p-4 border border-cream">
                 <div className="flex items-center gap-2 mb-2">
                   <Palette size={16} className="text-terracotta" />
@@ -336,6 +362,11 @@ export default function ProductDetailPage() {
               <div className="flex items-center gap-2 mb-4">
                 <DollarSign size={20} className="text-[#C65A2E]" />
                 <h3 className="text-lg font-bold text-[#3E2A1F]" style={{ fontFamily: 'var(--font-display)' }}>{t('cards.currencyTitle')}</h3>
+                {isCurrencyUpdating && (
+                  <span className="ml-2 flex items-center text-xs text-earth bg-white/50 px-2 py-1 rounded-full animate-pulse border border-stone/10">
+                    <RefreshCw size={12} className="mr-1 animate-spin text-[#C65A2E]" /> Güncelleniyor...
+                  </span>
+                )}
               </div>
               <div className="space-y-2 text-sm text-[#5A3E2B]">
                 <div className="flex justify-between"><span>{t('cards.basePrice')}:</span> <span className="font-semibold text-[#C65A2E]">₺{product.price}</span></div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { aiService } from '../../../services/aiService';
 import { productService } from '../../../services/productService';
@@ -8,7 +8,8 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { formatPrice } from '../../../utils/formatters';
 import { 
   Camera, Sparkles, Upload, Loader2, CheckCircle, ArrowLeft, Film, 
-  Save, Image as ImageIcon, Tag, FileText, Palette, Hammer, BookOpen
+  Save, Image as ImageIcon, Tag, FileText, Palette, Hammer, BookOpen,
+  User, MapPin
 } from 'lucide-react';
 
 // Kategoriye göre malzeme ve teknik seçenekleri
@@ -58,7 +59,7 @@ export default function AddProductPage() {
   const [aiResult, setAiResult] = useState(null);
   const [showVideoModal, setShowVideoModal] = useState(false);
   const [generatingStory, setGeneratingStory] = useState(false);
-  const { isAdmin } = useAuth();
+  const { isAdmin, isSeller, user, seller } = useAuth();
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -72,8 +73,21 @@ export default function AddProductPage() {
     technique: [],
     culturalStory: '',
     imageUrl: '',
+    artisanName: '',
+    productionLocation: ''
   });
   const [savedProductId, setSavedProductId] = useState(null);
+
+  useEffect(() => {
+    // Admin değilse, satıcının kendi bilgilerini otomatik doldur
+    if (isSeller && !isAdmin) {
+      setForm(prev => ({
+        ...prev,
+        artisanName: seller?.storeName || user?.name || '',
+        productionLocation: seller?.address ? seller.address.split(',').pop().trim() : 'Nevşehir, Turkey'
+      }));
+    }
+  }, [isSeller, isAdmin, seller, user]);
 
   const startCamera = async () => {
     try {
@@ -349,6 +363,37 @@ export default function AddProductPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField label="Fiyat (₺)" icon={<Tag size={14} />} value={form.price} onChange={v => setForm({...form, price: v})} type="number" placeholder="0.00" />
+                
+                {/* Üreten Kişi ve Üretilen Yer Alanları */}
+                <div>
+                  <label className="text-sm font-medium text-dark-brown mb-1.5 flex items-center gap-1.5 block">
+                    <User size={14} className="text-terracotta" /> Üreten Kişi / Atölye
+                  </label>
+                  <input
+                    type="text"
+                    value={form.artisanName}
+                    onChange={e => setForm({ ...form, artisanName: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl border border-stone/30 bg-background focus:outline-none focus:border-terracotta disabled:opacity-60 disabled:bg-stone/10"
+                    disabled={!isAdmin}
+                    placeholder="Örn: Ahmet Usta"
+                  />
+                  {!isAdmin && <p className="text-[10px] text-earth mt-1">Bu alan profilinize göre otomatik doldurulmuştur.</p>}
+                </div>
+                
+                <div>
+                  <label className="text-sm font-medium text-dark-brown mb-1.5 flex items-center gap-1.5 block">
+                    <MapPin size={14} className="text-terracotta" /> Üretim Yeri
+                  </label>
+                  <input
+                    type="text"
+                    value={form.productionLocation}
+                    onChange={e => setForm({ ...form, productionLocation: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl border border-stone/30 bg-background focus:outline-none focus:border-terracotta disabled:opacity-60 disabled:bg-stone/10"
+                    disabled={!isAdmin}
+                    placeholder="Örn: Avanos, Nevşehir"
+                  />
+                  {!isAdmin && <p className="text-[10px] text-earth mt-1">Bu alan profilinize göre otomatik doldurulmuştur.</p>}
+                </div>
               </div>
 
               {/* Malzeme Seçimi (Checkbox) */}
