@@ -98,9 +98,11 @@ class _LoginPanelState extends State<LoginPanel> {
         throw Exception("Rol tanımlı değil");
       }
     } catch (e) {
+      if (!mounted) return;
+
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text("Hata: $e")));
+      ).showSnackBar(SnackBar(content: Text("Firebase kayıt hatası: $e")));
     }
   }
 
