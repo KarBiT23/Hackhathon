@@ -36,6 +36,29 @@ const CATEGORY_OPTIONS = {
   }
 };
 
+const compressImage = (base64Str, maxWidth = 800, quality = 0.7) => {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.src = base64Str;
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let width = img.width;
+      let height = img.height;
+
+      if (width > maxWidth) {
+        height = Math.round((height * maxWidth) / width);
+        width = maxWidth;
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+  });
+};
+
 async function generateStoryWithGemini(productName, category, materials, technique) {
   try {
     const res = await fetch('/api/gemini', {
@@ -107,11 +130,14 @@ export default function AddProductPage() {
       canvasRef.current.width = videoRef.current.videoWidth;
       canvasRef.current.height = videoRef.current.videoHeight;
       ctx.drawImage(videoRef.current, 0, 0);
-      const imageData = canvasRef.current.toDataURL('image/jpeg');
-      setCapturedImage(imageData);
-      const stream = videoRef.current.srcObject;
-      stream?.getTracks().forEach(t => t.stop());
-      setCameraActive(false);
+      const rawData = canvasRef.current.toDataURL('image/jpeg', 0.9);
+      
+      compressImage(rawData).then(compressed => {
+        setCapturedImage(compressed);
+        const stream = videoRef.current.srcObject;
+        stream?.getTracks().forEach(t => t.stop());
+        setCameraActive(false);
+      });
     }
   };
 
@@ -120,8 +146,9 @@ export default function AddProductPage() {
     if (file) {
       setUploadedFile(file);
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setCapturedImage(reader.result);
+      reader.onloadend = async () => {
+        const compressed = await compressImage(reader.result);
+        setCapturedImage(compressed);
       };
       reader.readAsDataURL(file);
     }
@@ -188,20 +215,13 @@ export default function AddProductPage() {
 
   const handleSave = async () => {
     try {
-      let finalImageUrl = form.imageUrl;
-      if (finalImageUrl.includes('drive.google.com')) {
-        const driveRegex = /\/d\/([a-zA-Z0-9_-]+)/;
-        const match = finalImageUrl.match(driveRegex);
-        if (match && match[1]) {
-          finalImageUrl = `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1000`;
-        }
-      }
       const payload = {
         ...form,
         materials: form.materials.join(', '),
         technique: form.technique.join(', '),
-        imageUrl: finalImageUrl,
+        imageBase64: capturedImage || '',
       };
+      delete payload.imageUrl;
       const savedProd = await productService.create(payload);
       setSavedProductId(savedProd.productId);
       setStep(3);
@@ -472,18 +492,7 @@ export default function AddProductPage() {
                 </button>
               </div>
 
-              <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl">
-                <FormField 
-                  label="Görsel URL (Google Drive vb.)" 
-                  icon={<ImageIcon size={14} />} 
-                  value={form.imageUrl} 
-                  onChange={v => setForm({...form, imageUrl: v})} 
-                  placeholder="https://drive.google.com/file/d/..." 
-                />
-                <p className="text-xs text-blue-800 mt-2">
-                  Not: Google Drive linki yapıştırırsanız sistem onu otomatik olarak direkt görsel linkine dönüştürecektir.
-                </p>
-              </div>
+
 
               {/* AI Video Button */}
               <button 

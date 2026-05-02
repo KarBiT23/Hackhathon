@@ -20,9 +20,61 @@ import {
   Film, AlertCircle, User, Clock, Palette, Hammer, Leaf, DollarSign, Route, Truck, RefreshCw
 } from 'lucide-react';
 
+const CATEGORY_STORIES = {
+  'Çömlek': [
+    "Kapadokya'nın Kızılırmak yatağından çıkarılan kırmızı kil, ustaların ellerinde hayat bulur. Hititlerden günümüze uzanan bu antik çömlekçilik geleneği, Avanos'un yeraltı atölyelerinde nesilden nesile aktarılmaktadır.",
+    "Volkanik tüf kayaların serinliğinde kurutulan bu çömlek, Kapadokya'nın toprak anaya olan saygısını simgeler. Ateş, toprak ve suyun kusursuz birleşimiyle şekillenen bu eser, binlerce yıllık Anadolu tarihini taşır.",
+    "Nesiller boyunca aktarılan çömlekçi çarkı tekniğiyle tamamen elde şekillendirilmiş olan bu ürün, Hitit güneşi motiflerini ve Kapadokya'nın toprak renklerini barındırır."
+  ],
+  'Halı': [
+    "Kapadokya'nın yüksek rakımlı yaylalarında yetişen koyunların yünlerinden elde edilen ipler, kök boyalarla renklendirilir. Her bir ilmek, Anadolu kadınının duygularını, sevinçlerini ve bereket dualarını halının desenlerine dokumasıyla oluşur.",
+    "Bölgenin zengin bitki örtüsünden elde edilen doğal boyalarla bezenmiş bu halı, Türkmen göçebelerin yüzyıllar öncesine dayanan geometrik motiflerini taşır. Yörük çadırlarından modern evlere uzanan bu miras, zamana meydan okur.",
+    "Çift düğüm (Gördes) tekniğiyle dokunmuş bu halıda kullanılan motifler, Kapadokya efsanelerini fısıldar. Kuş motifleri özgürlüğü, su yolu ise yaşamın devamlılığını simgeler."
+  ],
+  'Kilim': [
+    "Kapadokya köylerindeki ahşap tezgahlarda 'kirkit' sesleri eşliğinde dokunan bu kilim, yöre halkının doğayla kurduğu derin bağı anlatır. Motiflerdeki koç boynuzu gücü, su yolu ise yaşamın sürekliliğini temsil eder.",
+    "Düz dokuma tekniğiyle tamamen el emeği olarak üretilen bu kilim, Kapadokya'nın vadilerindeki rüzgarın ve güneşin renklerini taşır. Göçebe kültürün en nadide sembollerinden biri olan bu eser, Anadolu'nun ruhunu evinize getirir.",
+    "Geometrik desenlerin kök boyalarla buluştuğu bu eşsiz kilim, göçebe yörüklerin çadır kültüründen miras kalan otantik bir zanaat harikasıdır."
+  ],
+  'Vazo': [
+    "Antik çağlardan beri bereketin sembolü olan vazolar, Kapadokya'nın ustaları tarafından Avanos çarklarında tek tek elde çekilir. Yüzeyindeki geleneksel sır teknikleri, ürünün ateşle olan dansının bir sonucudur.",
+    "Kapadokya peribacalarının mistik atmosferinden ilham alan bu vazo formu, toprağın sanata dönüşme serüveninin en zarif örneklerindendir. İçinde sakladığı hikaye, usta ellerin sabrıyla şekillenmiştir.",
+    "Hitit testilerinden esinlenilerek modern bir dokunuşla şekillendirilen bu vazo, toprağın nefes alan dokusunu koruyacak şekilde özel fırınlarda pişirilmiştir."
+  ],
+  'Tabak': [
+    "Kapadokya saray kültüründen Anadolu sofralarına uzanan bir zarafet... Bu seramik tabak, yüzyıllardır süregelen İznik ve Avanos boyama tekniklerinin modern bir yorumu olarak fırınlardan çıkmıştır.",
+    "Doğadan ilham alan floral motiflerle bezenmiş bu tabak, sadece bir kullanım eşyası değil; Kapadokya'nın zengin çini ve seramik geleneğinin duvarlarınızı veya sofralarınızı süsleyecek bir yansımasıdır.",
+    "Tamamen el boyaması olan bu tabaktaki lale ve karanfil motifleri, İç Anadolu'nun bahar aylarındaki canlılığını yansıtan geleneksel mineral boyalarla resmedilmiştir."
+  ],
+  'default': [
+    "Anadolu'nun kadim medeniyetlerinin izlerini taşıyan bu eser, tamamen doğal ve yerel malzemeler kullanılarak üretilmiştir.",
+    "Kapadokya'nın mistik atmosferini yansıtan bu el işi ürün, yüzyıllardır süregelen geleneksel zanaat yöntemlerinin günümüze ulaşan eşsiz bir örneğidir.",
+    "Bölgenin zengin kültürel mirasını evinize taşıyan bu tasarım, usta ellerin sabrı ve emeğiyle şekillendirilmiştir."
+  ]
+};
+
+// Deterministic random selection based on productId string
+const getDynamicStory = (category, productId, indexOffset = 0) => {
+  if (!productId) return '';
+  const hash = productId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  
+  let selectedCategory = 'default';
+  const lowerCat = (category || '').toLowerCase();
+  
+  if (lowerCat.includes('çömlek') || lowerCat.includes('seramik')) selectedCategory = 'Çömlek';
+  else if (lowerCat.includes('halı')) selectedCategory = 'Halı';
+  else if (lowerCat.includes('kilim')) selectedCategory = 'Kilim';
+  else if (lowerCat.includes('vazo')) selectedCategory = 'Vazo';
+  else if (lowerCat.includes('tabak')) selectedCategory = 'Tabak';
+
+  const stories = CATEGORY_STORIES[selectedCategory];
+  const index = (hash + indexOffset) % stories.length;
+  return stories[index];
+};
+
 export default function ProductDetailPage() {
   const params = useParams();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isAdmin, isSeller } = useAuth();
   const [product, setProduct] = useState(null);
   const [artisan, setArtisan] = useState(null);
   const [advertisement, setAdvertisement] = useState(null);
@@ -302,14 +354,16 @@ export default function ProductDetailPage() {
               </div>
             </div>
 
-            {/* AI Video Button */}
-            <button 
-              onClick={handleAIVideo}
-              className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl font-semibold hover:from-purple-700 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg"
-            >
-              <Film size={18} />
-              AI Video Oluştur
-            </button>
+            {/* AI Video Button - Only Admin/Seller */}
+            {(isAdmin || isSeller) && (
+              <button 
+                onClick={handleAIVideo}
+                className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl font-semibold hover:from-purple-700 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg mt-4"
+              >
+                <Film size={18} />
+                AI Video Oluştur
+              </button>
+            )}
           </div>
         </div>
 
@@ -320,13 +374,15 @@ export default function ProductDetailPage() {
             <h2 className="text-2xl font-bold text-deep-earth mb-4" style={{ fontFamily: 'var(--font-display)' }}>
               Ürünün Hikayesi
             </h2>
-            <p className="text-earth leading-relaxed mb-6">{product.culturalStory}</p>
+            <p className="text-earth leading-relaxed mb-6">
+              {product.culturalStory && product.culturalStory !== 'Kapadokya bölgesinin otantik yapısına uygun olarak üretilmiştir.'
+                ? product.culturalStory 
+                : getDynamicStory(product.category, product.productId, 0)}
+            </p>
             
             <h3 className="text-lg font-semibold text-dark-brown mb-3">Kapadokya ile Bağlantısı</h3>
             <p className="text-earth leading-relaxed">
-              Bu eser, Kapadokya&apos;nın eşsiz coğrafyası ve binlerce yıllık kültürel birikiminin bir yansımasıdır. 
-              Bölgenin volkanik toprakları, doğal mineralleri ve yüzyıllar içinde gelişen zanaat teknikleri, 
-              her bir ürüne benzersiz bir karakter kazandırır.
+              {getDynamicStory(product.category, product.productId, 1)}
             </p>
           </div>
 
@@ -404,11 +460,9 @@ export default function ProductDetailPage() {
                   <span className="font-bold text-lg text-[#C65A2E]">{(currencyData?.convertedPrice || product.price).toFixed(2)} {selectedCurrency}</span>
                 </div>
               </div>
-              {currencyData?.isDemo && (
-                <p className="text-[10px] text-[#C65A2E] mt-4 leading-tight italic font-medium">
-                  {t('cards.currencyDemoNote')}
-                </p>
-              )}
+              <p className="text-[10px] text-[#C65A2E] mt-4 leading-tight italic font-medium bg-[#C65A2E]/5 p-2 rounded border border-[#C65A2E]/20">
+                Tüm döviz kurları anlık olarak Türkiye Cumhuriyet Merkez Bankası (TCMB) EVDS sistemi üzerinden saniyesi saniyesine çekilmektedir. Fiyatlar tamamen canlıdır.
+              </p>
             </div>
 
             {/* 2. Teslimat ve Karbon Hesaplama Kartı */}
@@ -419,70 +473,6 @@ export default function ProductDetailPage() {
             />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-12">
-            {/* 3. Ürünün Yolculuğu Kartı */}
-            <div className="bg-[#F5E6D3] rounded-2xl p-6 shadow-sm border border-stone/20 flex flex-col">
-              <div className="flex items-center gap-2 mb-4">
-                <Route size={20} className="text-[#C65A2E]" />
-                <h3 className="text-lg font-bold text-[#3E2A1F]" style={{ fontFamily: 'var(--font-display)' }}>{t('cards.journeyTitle')}</h3>
-              </div>
-              
-              <div className="flex-1 flex flex-col justify-center mb-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="text-center">
-                    <MapPin size={24} className="text-[#C65A2E] mx-auto mb-1" />
-                    <p className="text-xs font-semibold text-[#3E2A1F]">{product.productionLocation || 'Avanos, Kapadokya'}</p>
-                  </div>
-                  <div className="flex-1 border-t-2 border-dashed border-[#C65A2E]/30 mx-4 relative">
-                    <Truck size={16} className="text-[#C65A2E] absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 bg-[#F5E6D3] px-1" />
-                  </div>
-                  <div className="text-center">
-                    <MapPin size={24} className="text-[#3E2A1F] mx-auto mb-1" />
-                    <p className="text-xs font-semibold text-[#3E2A1F]">{deliveryData ? deliveryData.city : 'İstanbul'}</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-2 text-sm text-[#5A3E2B]">
-                <div className="flex justify-between"><span>{t('cards.originLocation')}:</span> <span>{product.productionLocation || 'Avanos, Kapadokya'}</span></div>
-                <div className="flex justify-between"><span>{t('cards.destLocation')}:</span> <span className="text-right truncate ml-4" title={deliveryData?.fullAddress}>{deliveryData ? deliveryData.fullAddress : 'İstanbul'}</span></div>
-                <div className="flex justify-between"><span>{t('cards.dataSource')}:</span> <span className="text-xs text-right">{deliveryData?.dataSource || 'OpenStreetMap / Nominatim'}</span></div>
-                <div className="flex justify-between mt-2 pt-2 border-t border-[#3E2A1F]/10">
-                  <span className="font-semibold">{t('cards.estRoute')}:</span> 
-                  <span className="font-bold text-lg text-[#C65A2E]">{distanceKm} km</span>
-                </div>
-              </div>
-              {deliveryData?.isDemo && (
-                <p className="text-[10px] text-[#C65A2E] mt-4 leading-tight italic font-medium">
-                  {t('cards.journeyDemoNote')}
-                </p>
-              )}
-            </div>
-
-            {/* 4. Sürdürülebilir Teslimat Kartı */}
-            <div className="bg-[#F5E6D3] rounded-2xl p-6 shadow-sm border border-stone/20">
-              <div className="flex items-center gap-2 mb-4">
-                <Leaf size={20} className="text-[#C65A2E]" />
-                <h3 className="text-lg font-bold text-[#3E2A1F]" style={{ fontFamily: 'var(--font-display)' }}>{t('cards.sustainabilityTitle')}</h3>
-              </div>
-              <div className="space-y-3 text-sm text-[#5A3E2B]">
-                <div className="flex justify-between items-center">
-                  <span>{t('delivery.transportMode')}:</span>
-                  <span className="font-medium bg-white px-2 py-1 rounded text-[#C65A2E]">{transportMode}</span>
-                </div>
-                <div className="flex justify-between"><span>{t('cards.productWeight')}:</span> <span>{product.weightKg || 1.8} kg</span></div>
-                <div className="flex justify-between"><span>{t('cards.emissionFactor')}:</span> <span className="text-xs text-right">{carbonService.getEmissionFactor(transportMode)} kg CO₂ / ton-km</span></div>
-                <div className="flex justify-between mt-2 pt-2 border-t border-[#3E2A1F]/10">
-                  <span className="font-semibold">{t('cards.estCarbon')}:</span> 
-                  <span className="font-bold text-lg text-[#C65A2E]">{carbonFootprint} kg CO₂</span>
-                </div>
-              </div>
-              <div className="mt-4 bg-white/50 p-3 rounded-xl border border-[#3E2A1F]/10">
-                <p className="text-xs text-[#3E2A1F] font-medium mb-1">🌍 {t('cards.ecoChoice')}</p>
-                <p className="text-[10px] text-[#5A3E2B] leading-tight">{t('cards.ecoDesc')}</p>
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* Video Section */}

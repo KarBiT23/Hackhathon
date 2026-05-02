@@ -101,7 +101,7 @@ export default function CarbonRoutePanel({ routeData, productWeight, selectedMod
       <div
         className="transition-all duration-500 ease-in-out"
         style={{
-          maxHeight: isOpen ? '1200px' : '0px',
+          maxHeight: isOpen ? '3000px' : '0px',
           opacity: isOpen ? 1 : 0,
           overflow: 'hidden',
         }}
