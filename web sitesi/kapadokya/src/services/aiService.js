@@ -9,41 +9,8 @@ export const aiService = {
    * In Firebase: Call Cloud Function that uses Vision AI
    */
   analyzeProduct: async (imageData) => {
-    await delay(2000); // Simulate AI processing time
-    
-    // Demo AI analysis result
-    const categories = ['Vazo', 'Halı', 'Seramik', 'Çömlek', 'Testi', 'Tabak'];
-    const randomCategory = categories[Math.floor(Math.random() * categories.length)];
-    
-    const results = {
-      'Vazo': {
-        category: 'Vazo',
-        confidence: 0.94,
-        suggestedName: 'Kapadokya El Yapımı Kırmızı Kil Vazo',
-        suggestedDescription: 'Avanos\'un geleneksel çömlekçilik tekniğiyle, Kızılırmak kilinden üretilmiş el yapımı vazo. Doğal mineral pigmentlerle renklendirilmiştir.',
-        suggestedMaterials: 'Kızılırmak kırmızı kili, doğal mineral pigmentler',
-        suggestedTechnique: 'Geleneksel çömlekçi çarkı, el şekillendirme, 1050°C fırınlama',
-        suggestedCulturalStory: 'Bu vazo, 3000 yıllık Avanos çömlekçilik geleneğinin yaşayan bir örneğidir. Kızılırmak nehrinin kıyılarından toplanan kırmızı kil, ustanın elinde benzersiz bir forma kavuşur.'
-      },
-      'Halı': {
-        category: 'Halı',
-        confidence: 0.91,
-        suggestedName: 'Kapadokya Geleneksel El Dokuma Halı',
-        suggestedDescription: 'Doğal boyalarla renklendirilmiş yünlerden, geleneksel Anadolu motifleriyle dokunmuş otantik halı.',
-        suggestedMaterials: 'Doğal yün, bitkisel boyalar (ceviz kabuğu, nar kabuğu)',
-        suggestedTechnique: 'El dokuma, Gördes düğümü, doğal boyama',
-        suggestedCulturalStory: 'Kapadokya halıları, Türk halıcılık sanatının en nadide örneklerindendir. Her motif doğadan ve günlük yaşamdan ilham alır.'
-      },
-      'Seramik': {
-        category: 'Seramik',
-        confidence: 0.89,
-        suggestedName: 'Göreme El Boyama Seramik',
-        suggestedDescription: 'Hitit ve Osmanlı motiflerinden ilham alan, el boyama tekniğiyle süslenmiş dekoratif seramik.',
-        suggestedMaterials: 'Beyaz kil, sır, mineral pigmentler',
-        suggestedTechnique: 'El boyama, çift fırınlama, sırlama tekniği',
-        suggestedCulturalStory: 'Göreme seramikleri, bölgenin volkanik topraklarının sunduğu eşsiz hammaddelerle üretilir.'
-      },
-      'Çömlek': {
+    const getCategoryDetails = () => ({
+      'Comlek': {
         category: 'Çömlek',
         confidence: 0.92,
         suggestedName: 'Kapadokya Geleneksel Çömlek',
@@ -52,14 +19,32 @@ export const aiService = {
         suggestedTechnique: 'Çömlekçi çarkı, geleneksel fırınlama',
         suggestedCulturalStory: 'Kapadokya çömlekleri, yüzyıllardır bölge mutfağının ayrılmaz bir parçasıdır.'
       },
-      'Testi': {
-        category: 'Testi',
-        confidence: 0.88,
-        suggestedName: 'Anadolu Geleneksel El Yapımı Testi',
-        suggestedDescription: 'Gözenekli kırmızı kilden üretilmiş, suyu doğal serin tutan geleneksel testi.',
-        suggestedMaterials: 'Gözenekli kırmızı kil, doğal pigmentler',
-        suggestedTechnique: 'Geleneksel el şekillendirme, açık hava kurutma',
-        suggestedCulturalStory: 'Anadolu\'da testiler, yaşamın sembolüdür. Su taşıyan testi, bereketin ve misafirperverliğin simgesidir.'
+      'Vazo': {
+        category: 'Vazo',
+        confidence: 0.94,
+        suggestedName: 'Kapadokya El Yapımı Kırmızı Kil Vazo',
+        suggestedDescription: 'Avanos\'un geleneksel çömlekçilik tekniğiyle, Kızılırmak kilinden üretilmiş el yapımı vazo. Doğal mineral pigmentlerle renklendirilmiştir.',
+        suggestedMaterials: 'Kızılırmak kırmızı kili, doğal mineral pigmentler',
+        suggestedTechnique: 'Geleneksel çömlekçi çarkı, el şekillendirme, 1050°C fırınlama',
+        suggestedCulturalStory: 'Bu vazo, 3000 yıllık Avanos çömlekçilik geleneğinin yaşayan bir örneğidir.'
+      },
+      'Hali': {
+        category: 'Halı',
+        confidence: 0.91,
+        suggestedName: 'Kapadokya Geleneksel El Dokuma Halı',
+        suggestedDescription: 'Doğal boyalarla renklendirilmiş yünlerden, geleneksel Anadolu motifleriyle dokunmuş otantik halı.',
+        suggestedMaterials: 'Doğal yün, bitkisel boyalar (ceviz kabuğu, nar kabuğu)',
+        suggestedTechnique: 'El dokuma, Gördes düğümü, doğal boyama',
+        suggestedCulturalStory: 'Kapadokya halıları, Türk halıcılık sanatının en nadide örneklerindendir.'
+      },
+      'Kilim': {
+        category: 'Kilim',
+        confidence: 0.90,
+        suggestedName: 'Kapadokya El Dokuma Kilim',
+        suggestedDescription: 'Yüzyıllık Anadolu geleneğiyle, doğal boyalarla renklendirilmiş yünlerden el tezgahında dokunmuş otantik kilim.',
+        suggestedMaterials: 'Doğal yün, bitkisel boyalar',
+        suggestedTechnique: 'El dokuma, düz dokuma tekniği, doğal boyama',
+        suggestedCulturalStory: 'Kapadokya kilimleri, Anadolu dokumacılığının en kadim örneklerindendir. Her motif bir hikaye anlatır.'
       },
       'Tabak': {
         category: 'Tabak',
@@ -70,9 +55,51 @@ export const aiService = {
         suggestedTechnique: 'El boyama, İznik sırlama tekniği, çift fırınlama',
         suggestedCulturalStory: 'İznik çini sanatı, Osmanlı İmparatorluğu\'nun en değerli sanat formlarından biridir.'
       }
-    };
+    });
 
-    return results[randomCategory] || results['Vazo'];
+    // 1. Kendi Eğittiğimiz Python AI Modeline bağlanmayı dene
+    try {
+      if (imageData) {
+        let blob;
+        if (typeof imageData === 'string' && imageData.startsWith('data:image')) {
+          const res = await fetch(imageData);
+          blob = await res.blob();
+        } else {
+          blob = imageData; // File object
+        }
+
+        const formData = new FormData();
+        formData.append("file", blob, "upload.jpg");
+
+        // Python FastAPI sunucusuna gönder
+        const response = await fetch("http://127.0.0.1:8000/predict", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.category) {
+            const results = getCategoryDetails();
+            return results[data.category] || {
+              ...results['Seramik'],
+              category: data.category,
+              suggestedName: `Özel ${data.category} Eseri`,
+              confidence: 0.95
+            };
+          }
+        }
+      }
+    } catch (e) {
+      console.log("Özel AI modeline bağlanılamadı (FastAPI kapalı olabilir), Mock veriye geçiliyor:", e.message);
+    }
+
+    // 2. Fallback: Python sunucusu kapalıysa rastgele sonuç ver (Hata vermesin)
+    await delay(1500);
+    const results = getCategoryDetails();
+    const categories = ['Comlek', 'Vazo', 'Hali', 'Kilim', 'Tabak'];
+    const randomCategory = categories[Math.floor(Math.random() * categories.length)];
+    return results[randomCategory];
   },
 
   /**

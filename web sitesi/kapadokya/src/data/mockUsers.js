@@ -19,8 +19,8 @@ export const mockUsers = [
   },
   {
     userId: 'user-003',
-    name: 'Mustafa Öztürk',
-    email: 'mustafa@example.com',
+    name: 'Ahmet Usta',
+    email: 'ahmet@example.com',
     role: 'seller',
     country: 'Türkiye',
     phone: '+90 532 333 4455',
@@ -59,7 +59,8 @@ export const mockSellers = [
   {
     sellerId: 'seller-001',
     userId: 'user-003',
-    storeName: 'Avanos Sanat Atölyesi',
+    storeName: 'Ahmet Usta - Kapadokya Halı Atölyesi',
+    specialty: 'Halı',
     phone: '+90 532 333 4455',
     address: 'Avanos Çarşı Mah. No:12, Nevşehir',
     createdAt: '2025-11-20T09:00:00Z'

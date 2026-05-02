@@ -1,9 +1,10 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MapPin, Search } from 'lucide-react';
 import { geoService } from '../../services/geoService';
 import { carbonService } from '../../services/carbonService';
 import { useLanguage } from '../../context/LanguageContext';
+import CarbonRoutePanel from './CarbonRoutePanel';
 
 const COUNTRY_CITIES = {
   "Türkiye": ["İstanbul", "Ankara", "İzmir", "Bursa", "Antalya", "Nevşehir"],
@@ -31,7 +32,16 @@ export default function DeliveryLocationSelector({
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [results, setResults] = useState(null);
+  const [routeData, setRouteData] = useState(null);
   const { t } = useLanguage();
+
+  const isSeaRouteAvailable = country !== 'Türkiye';
+
+  useEffect(() => {
+    if (!isSeaRouteAvailable && transportMode === 'Deniz Yolu') {
+      setTransportMode('Kara (TIR)');
+    }
+  }, [isSeaRouteAvailable, transportMode]);
 
   const handleCalculate = async () => {
     if (!country || !city) {
@@ -46,6 +56,14 @@ export default function DeliveryLocationSelector({
       const fullAddress = district ? `${district}, ${city}, ${country}` : `${city}, ${country}`;
       const route = await geoService.getDeliveryRoute(productionLocation, fullAddress);
       const carbon = carbonService.calculateCarbonFootprint(route.distanceKm, productWeight, transportMode);
+
+      // Store route data for the carbon panel
+      setRouteData({
+        ...route,
+        originStr: productionLocation,
+        destStr: fullAddress,
+        isSeaRouteAvailable,
+      });
 
       if (onCalculate) {
         onCalculate(
@@ -95,7 +113,7 @@ export default function DeliveryLocationSelector({
             value={country} 
             onChange={e => {
               setCountry(e.target.value);
-              setCity(''); // Ülke değiştiğinde şehri temizle
+              setCity('');
             }}
             list="countries"
             className="w-full bg-[#F5E6D3]/30 border border-[#C65A2E]/30 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#C65A2E]"
@@ -142,7 +160,7 @@ export default function DeliveryLocationSelector({
             <option value="Kara (TIR)">Kara (TIR)</option>
             <option value="Demiryolu">Demiryolu</option>
             <option value="Hava Kargo">Hava Kargo</option>
-            <option value="Deniz Yolu">Deniz Yolu</option>
+            {isSeaRouteAvailable && <option value="Deniz Yolu">Deniz Yolu</option>}
           </select>
         </div>
       </div>
@@ -184,6 +202,15 @@ export default function DeliveryLocationSelector({
             </tbody>
           </table>
         </div>
+      )}
+
+      {/* Animated Carbon Route Panel - Opens below the button after calculation */}
+      {routeData && (
+        <CarbonRoutePanel
+          routeData={routeData}
+          productWeight={productWeight}
+          selectedMode={transportMode}
+        />
       )}
     </div>
   );

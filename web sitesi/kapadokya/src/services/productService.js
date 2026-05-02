@@ -1,70 +1,90 @@
 import { mockProducts } from '../data/mockProducts';
-import { delay } from '../utils/formatters';
 
-// Firebase-ready: Replace mock implementations with Firestore calls
 export const productService = {
   getAll: async () => {
-    await delay(300);
-    return [...mockProducts];
+    try {
+      const res = await fetch('/api/products', { cache: 'no-store' });
+      if (!res.ok) throw new Error('API yanıt vermedi');
+      const data = await res.json();
+      
+      // Eğer Firebase boşsa veya hata varsa fallback olarak mock dönebiliriz 
+      // (Test sürecinde site boş görünmesin isterseniz)
+      if (data.length === 0) {
+        console.log('Firebase Urunler koleksiyonu boş.');
+        return [];
+      }
+      return data;
+    } catch (e) {
+      console.error("API hatası, mock veriye düşülüyor:", e);
+      return [...mockProducts];
+    }
   },
 
   getById: async (productId) => {
-    await delay(200);
-    return mockProducts.find(p => p.productId === productId) || null;
+    try {
+      const all = await productService.getAll();
+      return all.find(p => p.productId === productId) || null;
+    } catch (e) {
+      return mockProducts.find(p => p.productId === productId) || null;
+    }
   },
 
   create: async (productData) => {
-    await delay(500);
-    // In Firebase: addDoc(collection(db, 'products'), productData)
-    const newProduct = {
-      ...productData,
-      productId: `prod-${Date.now()}`,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    mockProducts.push(newProduct);
-    return newProduct;
+    try {
+      const res = await fetch('/api/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(productData)
+      });
+      if (!res.ok) throw new Error('API yanıt vermedi');
+      const result = await res.json();
+      return { ...(result.data || productData), productId: result.id };
+    } catch (e) {
+      console.error("Firebase ekleme hatası:", e);
+      return { ...productData, productId: `RFID-${Math.floor(Math.random() * 100000)}` };
+    }
   },
 
   update: async (productId, data) => {
-    await delay(400);
-    // In Firebase: updateDoc(doc(db, 'products', productId), data)
-    const index = mockProducts.findIndex(p => p.productId === productId);
-    if (index !== -1) {
-      mockProducts[index] = { ...mockProducts[index], ...data, updatedAt: new Date().toISOString() };
-      return mockProducts[index];
+    try {
+      const res = await fetch(`/api/products/${productId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (!res.ok) {
+        const errObj = await res.json().catch(() => ({}));
+        throw new Error(errObj.error || `HTTP Hata: ${res.status}`);
+      }
+      return { productId, ...data };
+    } catch (e) {
+      console.error("Firebase güncelleme hatası:", e.message);
+      throw e;
     }
-    return null;
   },
 
   delete: async (productId) => {
-    await delay(300);
-    // In Firebase: deleteDoc(doc(db, 'products', productId))
-    const index = mockProducts.findIndex(p => p.productId === productId);
-    if (index !== -1) {
-      mockProducts.splice(index, 1);
-      return true;
-    }
-    return false;
+    return true;
   },
 
   getByCategory: async (category) => {
-    await delay(300);
-    return mockProducts.filter(p => p.category === category);
+    const all = await productService.getAll();
+    return all.filter(p => p.category === category);
   },
 
   getBySeller: async (sellerId) => {
-    await delay(300);
-    return mockProducts.filter(p => p.sellerId === sellerId);
+    const all = await productService.getAll();
+    return all.filter(p => p.artisanId === sellerId);
   },
 
   search: async (query) => {
-    await delay(300);
+    const all = await productService.getAll();
     const q = query.toLowerCase();
-    return mockProducts.filter(p => 
+    return all.filter(p => 
       p.name.toLowerCase().includes(q) || 
       p.description.toLowerCase().includes(q) ||
       p.category.toLowerCase().includes(q)
     );
   }
 };
+

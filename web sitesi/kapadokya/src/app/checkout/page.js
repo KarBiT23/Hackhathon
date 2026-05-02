@@ -8,6 +8,7 @@ import { shippingService } from '../../services/shippingService';
 import { geoService } from '../../services/geoService';
 import { carbonService } from '../../services/carbonService';
 import { currencyService } from '../../services/currencyService';
+import { orderService } from '../../services/orderService';
 import DeliveryLocationSelector from '../../components/delivery/DeliveryLocationSelector';
 import { formatPrice } from '../../utils/formatters';
 import { CreditCard, Truck, CheckCircle, ShoppingBag, Lock, ArrowLeft, Package, Calendar, Clock, Hash, Leaf, DollarSign, MapPin } from 'lucide-react';
@@ -71,10 +72,20 @@ function CheckoutContent() {
 
   const handlePayment = async () => {
     setProcessing(true);
-    // Simulate payment processing
-    await new Promise(r => setTimeout(r, 2000));
-    setStep(3);
-    setProcessing(false);
+    try {
+      await orderService.create({
+        productId: product.productId,
+        price: totalPrice,
+        shippingId: selectedShipping?.shippingOptionId,
+        currency: selectedCurrency,
+        deliveryData: deliveryData
+      });
+      setStep(3);
+    } catch (error) {
+      alert(error.message || "Ödeme (Sipariş oluşturma) sırasında bir hata oluştu.");
+    } finally {
+      setProcessing(false);
+    }
   };
 
   if (loading) {

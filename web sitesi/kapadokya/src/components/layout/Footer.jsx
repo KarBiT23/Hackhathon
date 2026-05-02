@@ -55,9 +55,10 @@ export default function Footer() {
             <h3 className="font-bold text-dark-brown mb-6" style={{ fontFamily: 'var(--font-display)' }}>Kategoriler</h3>
             <ul className="space-y-3">
               <FooterLink href="/products?category=Seramik">Seramik</FooterLink>
-              <FooterLink href="/products?category=Halı">Halı & Kilim</FooterLink>
-              <FooterLink href="/products?category=Çömlek">Avanos Çömlekleri</FooterLink>
-              <FooterLink href="/products?category=Heykel">Heykel & Figür</FooterLink>
+              <FooterLink href="/products?category=Halı">Halı</FooterLink>
+              <FooterLink href="/products?category=Kilim">Kilim</FooterLink>
+              <FooterLink href="/products?category=Çömlek">Çömlek</FooterLink>
+              <FooterLink href="/products?category=Vazo">Vazo</FooterLink>
             </ul>
           </div>
 
@@ -82,13 +83,13 @@ export default function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <div className="border-t border-stone/20 mt-10 pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-xs text-stone">
+        <div className="border-t border-dark-brown/20 mt-10 pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
+          <p className="text-xs text-dark-brown">
             © {new Date().getFullYear()} Kapadokya El Sanatları. {t('footer.rights')}
           </p>
-          <div className="flex items-center gap-6 text-sm text-stone">
-            <Link href="#" className="hover:text-terracotta transition-colors">Gizlilik Politikası</Link>
-            <Link href="#" className="hover:text-terracotta transition-colors">Kullanım Koşulları</Link>
+          <div className="flex items-center gap-6 text-sm text-dark-brown">
+            <Link href="#" className="hover:text-white transition-colors">Gizlilik Politikası</Link>
+            <Link href="#" className="hover:text-white transition-colors">Kullanım Koşulları</Link>
           </div>
         </div>
       </div>
@@ -99,7 +100,7 @@ export default function Footer() {
 function FooterLink({ href, children }) {
   return (
     <li>
-      <Link href={href} className="text-sm text-stone hover:text-warm-orange transition-colors">
+      <Link href={href} className="text-sm text-dark-brown hover:text-white transition-colors">
         {children}
       </Link>
     </li>

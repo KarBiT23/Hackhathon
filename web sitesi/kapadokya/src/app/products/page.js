@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { productService } from '../../services/productService';
+import { useAuth } from '../../contexts/AuthContext';
 import { formatPrice } from '../../utils/formatters';
 import { PRODUCT_CATEGORIES } from '../../types';
 import { Search, Filter, Grid3x3, List } from 'lucide-react';
@@ -11,6 +12,7 @@ import { Search, Filter, Grid3x3, List } from 'lucide-react';
 function ProductsContent() {
   const searchParams = useSearchParams();
   const categoryParam = searchParams.get('category');
+  const { isSeller, isAdmin, seller } = useAuth();
   const [products, setProducts] = useState([]);
   const [filtered, setFiltered] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(categoryParam || 'all');
@@ -19,7 +21,10 @@ function ProductsContent() {
 
   useEffect(() => {
     async function load() {
-      const data = await productService.getAll();
+      let data = await productService.getAll();
+      if (isSeller && !isAdmin) {
+        data = data.filter(p => p.category === (seller?.specialty || 'Halı'));
+      }
       setProducts(data);
       setLoading(false);
     }
@@ -82,7 +87,7 @@ function ProductsContent() {
             >
               Tümü
             </button>
-            {PRODUCT_CATEGORIES.filter(c => c !== 'Diğer El Sanatları').map(cat => (
+            {!loading && Array.from(new Set(products.map(p => p.category))).map(cat => (
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
@@ -137,11 +142,6 @@ function ProductsContent() {
                   <div className="absolute top-3 left-3">
                     <span className="badge-premium">{product.category}</span>
                   </div>
-                  {product.stock <= 5 && (
-                    <div className="absolute top-3 right-3 bg-red-500 text-white text-xs px-2.5 py-1 rounded-lg font-medium">
-                      Son {product.stock} adet
-                    </div>
-                  )}
                 </div>
                 <div className="p-5">
                   <h3 className="font-semibold text-dark-brown mb-1 group-hover:text-terracotta transition-colors" style={{ fontFamily: 'var(--font-display)' }}>
@@ -150,7 +150,6 @@ function ProductsContent() {
                   <p className="text-sm text-earth line-clamp-2 mb-3">{product.description.substring(0, 80)}...</p>
                   <div className="flex items-center justify-between">
                     <span className="text-xl font-bold text-terracotta">{formatPrice(product.price)}</span>
-                    <span className="text-xs text-earth bg-cream px-2 py-1 rounded-lg">{product.stock} stokta</span>
                   </div>
                 </div>
               </Link>

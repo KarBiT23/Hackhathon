@@ -1,35 +1,93 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { aiService } from '../../../services/aiService';
+import { productService } from '../../../services/productService';
+import { useAuth } from '../../../contexts/AuthContext';
 import { formatPrice } from '../../../utils/formatters';
 import { 
   Camera, Sparkles, Upload, Loader2, CheckCircle, ArrowLeft, Film, 
-  Save, Image as ImageIcon, Tag, FileText, Palette, Hammer, BookOpen
+  Save, Image as ImageIcon, Tag, FileText, Palette, Hammer, BookOpen,
+  User, MapPin
 } from 'lucide-react';
 
+// Kategoriye göre malzeme ve teknik seçenekleri
+const CATEGORY_OPTIONS = {
+  'Çömlek': {
+    materials: ['Kızılırmak kırmızı kili', 'Yerel kırmızı kil', 'Doğal sır', 'Mineral pigmentler', 'Volkanik toprak'],
+    techniques: ['Çömlekçi çarkı', 'El şekillendirme', 'Geleneksel fırınlama', 'Açık ateşte pişirme', '1050°C fırınlama']
+  },
+  'Vazo': {
+    materials: ['Kızılırmak kırmızı kili', 'Beyaz kil', 'Doğal mineral pigmentler', 'Seramik sırı', 'Kobalt oksit'],
+    techniques: ['Çömlekçi çarkı', 'El şekillendirme', 'Sırlama tekniği', 'Çift fırınlama', '1050°C fırınlama']
+  },
+  'Halı': {
+    materials: ['Doğal yün', 'Bitkisel boyalar', 'Ceviz kabuğu boyası', 'Nar kabuğu boyası', 'Kök boya', 'İpek iplik'],
+    techniques: ['El dokuma', 'Gördes düğümü', 'Doğal boyama', 'Çift düğüm tekniği', 'Tezgah dokuma']
+  },
+  'Kilim': {
+    materials: ['Doğal yün', 'Bitkisel boyalar', 'Pamuk iplik', 'Keçi kılı', 'Kök boya'],
+    techniques: ['Düz dokuma', 'El dokuma', 'Cicim tekniği', 'Zili tekniği', 'Sumak tekniği', 'Doğal boyama']
+  },
+  'Tabak': {
+    materials: ['Beyaz kil', 'Kobalt oksit', 'Turkuaz pigment', 'Seramik sırı', 'Altın yaldız', 'Mineral boyalar'],
+    techniques: ['El boyama', 'İznik sırlama tekniği', 'Çift fırınlama', 'Kalıp şekillendirme', 'Rölyef tekniği']
+  }
+};
+
+async function generateStoryWithGemini(productName, category, materials, technique) {
+  try {
+    const res = await fetch('/api/gemini', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ productName, category, materials, technique })
+    });
+    const data = await res.json();
+    if (res.ok && data.story) return data.story;
+  } catch (e) {
+    console.log('Gemini API hatası:', e.message);
+  }
+  return '';
+}
+
 export default function AddProductPage() {
-  const [step, setStep] = useState(1); // 1: capture, 2: AI result, 3: form
+  const [step, setStep] = useState(1);
   const [cameraActive, setCameraActive] = useState(false);
   const [capturedImage, setCapturedImage] = useState(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [aiResult, setAiResult] = useState(null);
   const [showVideoModal, setShowVideoModal] = useState(false);
+  const [generatingStory, setGeneratingStory] = useState(false);
+  const { isAdmin, isSeller, user, seller } = useAuth();
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const [uploadedFile, setUploadedFile] = useState(null);
 
-  // Form state
   const [form, setForm] = useState({
     name: '',
     category: '',
-    description: '',
     price: '',
-    stock: '',
-    materials: '',
-    technique: '',
+    materials: [],
+    technique: [],
     culturalStory: '',
+    imageUrl: '',
+    artisanName: '',
+    productionLocation: ''
   });
+  const [savedProductId, setSavedProductId] = useState(null);
+
+  useEffect(() => {
+    // Admin değilse, satıcının kendi bilgilerini otomatik doldur
+    if (isSeller && !isAdmin) {
+      setForm(prev => ({
+        ...prev,
+        artisanName: seller?.storeName || user?.name || '',
+        productionLocation: seller?.address ? seller.address.split(',').pop().trim() : 'Nevşehir, Turkey'
+      }));
+    }
+  }, [isSeller, isAdmin, seller, user]);
 
   const startCamera = async () => {
     try {
@@ -39,7 +97,6 @@ export default function AddProductPage() {
         setCameraActive(true);
       }
     } catch (err) {
-      // Fallback: use demo image
       handleDemoCapture();
     }
   };
@@ -52,38 +109,106 @@ export default function AddProductPage() {
       ctx.drawImage(videoRef.current, 0, 0);
       const imageData = canvasRef.current.toDataURL('image/jpeg');
       setCapturedImage(imageData);
-      
-      // Stop camera
       const stream = videoRef.current.srcObject;
       stream?.getTracks().forEach(t => t.stop());
       setCameraActive(false);
     }
   };
 
-  const handleDemoCapture = () => {
-    setCapturedImage('https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=600&h=600&fit=crop');
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setUploadedFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setCapturedImage(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleAIAnalyze = async () => {
     setAnalyzing(true);
-    const result = await aiService.analyzeProduct(capturedImage);
+    // Eğer dosya yüklendiyse dosyayı, yoksa base64'ü gönder
+    const imageToSend = uploadedFile || capturedImage;
+    const result = await aiService.analyzeProduct(imageToSend);
+
+    if (!isAdmin && result.category !== 'Halı') {
+      alert(`Ahmet Usta, siz bir Halı ustasısınız. Yapay zeka bu görseli '${result.category}' olarak algıladı. Sisteme yalnızca 'Halı' görselleri yükleyebilirsiniz.`);
+      setAnalyzing(false);
+      return;
+    }
+
     setAiResult(result);
     setForm({
       ...form,
       name: result.suggestedName,
       category: result.category,
-      description: result.suggestedDescription,
-      materials: result.suggestedMaterials,
-      technique: result.suggestedTechnique,
-      culturalStory: result.suggestedCulturalStory,
+      materials: [],
+      technique: [],
+      culturalStory: '',
     });
     setAnalyzing(false);
     setStep(2);
   };
 
-  const handleSave = () => {
-    // Demo save
-    setStep(3);
+  // Gemini ile hikaye oluştur
+  const handleGenerateStory = async () => {
+    setGeneratingStory(true);
+    const materialsText = form.materials.join(', ') || 'Belirtilmedi';
+    const techniqueText = form.technique.join(', ') || 'Belirtilmedi';
+    const story = await generateStoryWithGemini(form.name, form.category, materialsText, techniqueText);
+    if (story) {
+      setForm({ ...form, culturalStory: story });
+    } else {
+      alert('Hikaye oluşturulamadı, lütfen tekrar deneyin.');
+    }
+    setGeneratingStory(false);
+  };
+
+  // Checkbox toggle
+  const toggleMaterial = (mat) => {
+    setForm(prev => ({
+      ...prev,
+      materials: prev.materials.includes(mat)
+        ? prev.materials.filter(m => m !== mat)
+        : [...prev.materials, mat]
+    }));
+  };
+  const toggleTechnique = (tech) => {
+    setForm(prev => ({
+      ...prev,
+      technique: prev.technique.includes(tech)
+        ? prev.technique.filter(t => t !== tech)
+        : [...prev.technique, tech]
+    }));
+  };
+
+  const categoryOptions = CATEGORY_OPTIONS[form.category] || null;
+
+  const handleSave = async () => {
+    try {
+      let finalImageUrl = form.imageUrl;
+      if (finalImageUrl.includes('drive.google.com')) {
+        const driveRegex = /\/d\/([a-zA-Z0-9_-]+)/;
+        const match = finalImageUrl.match(driveRegex);
+        if (match && match[1]) {
+          finalImageUrl = `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1000`;
+        }
+      }
+      const payload = {
+        ...form,
+        materials: form.materials.join(', '),
+        technique: form.technique.join(', '),
+        imageUrl: finalImageUrl,
+      };
+      const savedProd = await productService.create(payload);
+      setSavedProductId(savedProd.productId);
+      setStep(3);
+    } catch (error) {
+      console.error("Kaydetme hatası:", error);
+      alert("Ürün kaydedilirken bir hata oluştu.");
+    }
   };
 
   const handleAIVideo = () => {
@@ -117,7 +242,6 @@ export default function AddProductPage() {
 
         {step === 1 && (
           <div className="bg-white rounded-2xl shadow-sm border border-cream overflow-hidden">
-            {/* Camera area */}
             <div className="aspect-video bg-deep-earth relative flex items-center justify-center">
               {cameraActive ? (
                 <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
@@ -141,9 +265,16 @@ export default function AddProductPage() {
                       <Camera size={18} />
                       Kamerayı Aç
                     </button>
-                    <button onClick={handleDemoCapture} className="btn-secondary flex-1">
-                      <ImageIcon size={18} />
-                      Demo Görsel Kullan
+                    <input
+                      type="file"
+                      accept="image/*"
+                      ref={fileInputRef}
+                      onChange={handleFileUpload}
+                      className="hidden"
+                    />
+                    <button onClick={() => fileInputRef.current?.click()} className="btn-secondary flex-1">
+                      <Upload size={18} />
+                      Görsel Yükle
                     </button>
                   </>
                 )}
@@ -168,7 +299,7 @@ export default function AddProductPage() {
                   <div className="w-full text-center py-4">
                     <Loader2 size={32} className="animate-spin text-terracotta mx-auto mb-2" />
                     <p className="text-earth font-medium">AI ürünü analiz ediyor...</p>
-                    <p className="text-xs text-earth/60 mt-1">Kategori, açıklama ve detaylar otomatik oluşturuluyor</p>
+                    <p className="text-xs text-earth/60 mt-1">Kategori otomatik tespit ediliyor</p>
                   </div>
                 )}
               </div>
@@ -218,27 +349,141 @@ export default function AddProductPage() {
                   </label>
                   <select 
                     value={form.category} 
-                    onChange={e => setForm({...form, category: e.target.value})}
-                    className="w-full px-4 py-3 rounded-xl border border-stone/30 bg-background focus:outline-none focus:border-terracotta"
+                    onChange={e => setForm({...form, category: e.target.value, materials: [], technique: []})}
+                    className="w-full px-4 py-3 rounded-xl border border-stone/30 bg-background focus:outline-none focus:border-terracotta disabled:opacity-60 disabled:bg-stone/10"
+                    disabled={!isAdmin}
                   >
                     <option value="">Seçin</option>
-                    {['Vazo','Halı','Seramik','Çömlek','Testi','Tabak','Diğer El Sanatları'].map(c => (
+                    {['Çömlek','Vazo','Halı','Kilim','Tabak'].map(c => (
                       <option key={c} value={c}>{c}</option>
                     ))}
                   </select>
                 </div>
               </div>
 
-              <FormTextArea label="Açıklama" icon={<FileText size={14} />} value={form.description} onChange={v => setForm({...form, description: v})} rows={3} />
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField label="Fiyat (₺)" icon={<Tag size={14} />} value={form.price} onChange={v => setForm({...form, price: v})} type="number" placeholder="0.00" />
-                <FormField label="Stok Adedi" icon={<Tag size={14} />} value={form.stock} onChange={v => setForm({...form, stock: v})} type="number" placeholder="0" />
+                
+                {/* Üreten Kişi ve Üretilen Yer Alanları */}
+                <div>
+                  <label className="text-sm font-medium text-dark-brown mb-1.5 flex items-center gap-1.5 block">
+                    <User size={14} className="text-terracotta" /> Üreten Kişi / Atölye
+                  </label>
+                  <input
+                    type="text"
+                    value={form.artisanName}
+                    onChange={e => setForm({ ...form, artisanName: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl border border-stone/30 bg-background focus:outline-none focus:border-terracotta disabled:opacity-60 disabled:bg-stone/10"
+                    disabled={!isAdmin}
+                    placeholder="Örn: Ahmet Usta"
+                  />
+                  {!isAdmin && <p className="text-[10px] text-earth mt-1">Bu alan profilinize göre otomatik doldurulmuştur.</p>}
+                </div>
+                
+                <div>
+                  <label className="text-sm font-medium text-dark-brown mb-1.5 flex items-center gap-1.5 block">
+                    <MapPin size={14} className="text-terracotta" /> Üretim Yeri
+                  </label>
+                  <input
+                    type="text"
+                    value={form.productionLocation}
+                    onChange={e => setForm({ ...form, productionLocation: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl border border-stone/30 bg-background focus:outline-none focus:border-terracotta disabled:opacity-60 disabled:bg-stone/10"
+                    disabled={!isAdmin}
+                    placeholder="Örn: Avanos, Nevşehir"
+                  />
+                  {!isAdmin && <p className="text-[10px] text-earth mt-1">Bu alan profilinize göre otomatik doldurulmuştur.</p>}
+                </div>
               </div>
 
-              <FormField label="Malzeme" icon={<Palette size={14} />} value={form.materials} onChange={v => setForm({...form, materials: v})} />
-              <FormField label="Üretim Tekniği" icon={<Hammer size={14} />} value={form.technique} onChange={v => setForm({...form, technique: v})} />
-              <FormTextArea label="Kültürel Hikaye" icon={<BookOpen size={14} />} value={form.culturalStory} onChange={v => setForm({...form, culturalStory: v})} rows={4} />
+              {/* Malzeme Seçimi (Checkbox) */}
+              {categoryOptions && (
+                <div>
+                  <label className="text-sm font-medium text-dark-brown mb-2 flex items-center gap-1.5 block">
+                    <Palette size={14} className="text-terracotta" /> Malzemeler
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {categoryOptions.materials.map(mat => (
+                      <button
+                        key={mat}
+                        type="button"
+                        onClick={() => toggleMaterial(mat)}
+                        className={`px-3 py-2 rounded-xl text-sm font-medium transition-all border ${
+                          form.materials.includes(mat) 
+                            ? 'bg-terracotta text-white border-terracotta shadow-sm' 
+                            : 'bg-cream/50 text-dark-brown border-stone/20 hover:border-terracotta/50'
+                        }`}
+                      >
+                        {form.materials.includes(mat) ? '✓ ' : ''}{mat}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Üretim Tekniği Seçimi (Checkbox) */}
+              {categoryOptions && (
+                <div>
+                  <label className="text-sm font-medium text-dark-brown mb-2 flex items-center gap-1.5 block">
+                    <Hammer size={14} className="text-terracotta" /> Üretim Tekniği
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {categoryOptions.techniques.map(tech => (
+                      <button
+                        key={tech}
+                        type="button"
+                        onClick={() => toggleTechnique(tech)}
+                        className={`px-3 py-2 rounded-xl text-sm font-medium transition-all border ${
+                          form.technique.includes(tech) 
+                            ? 'bg-terracotta text-white border-terracotta shadow-sm' 
+                            : 'bg-cream/50 text-dark-brown border-stone/20 hover:border-terracotta/50'
+                        }`}
+                      >
+                        {form.technique.includes(tech) ? '✓ ' : ''}{tech}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Kültürel Hikaye - Gemini ile oluştur */}
+              <div>
+                <label className="text-sm font-medium text-dark-brown mb-1.5 flex items-center gap-1.5 block">
+                  <BookOpen size={14} className="text-terracotta" /> Kültürel Hikaye
+                </label>
+                <textarea
+                  value={form.culturalStory}
+                  onChange={e => setForm({...form, culturalStory: e.target.value})}
+                  rows={4}
+                  className="w-full px-4 py-3 rounded-xl border border-stone/30 bg-background focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 resize-none"
+                  placeholder="Gemini AI ile otomatik oluşturun veya kendiniz yazın..."
+                />
+                <button
+                  type="button"
+                  onClick={handleGenerateStory}
+                  disabled={generatingStory}
+                  className="mt-2 flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl text-sm font-medium hover:from-blue-600 hover:to-indigo-700 transition-all disabled:opacity-50"
+                >
+                  {generatingStory ? (
+                    <><Loader2 size={14} className="animate-spin" /> Gemini yazıyor...</>
+                  ) : (
+                    <><Sparkles size={14} /> Gemini AI ile Hikaye Oluştur</>
+                  )}
+                </button>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl">
+                <FormField 
+                  label="Görsel URL (Google Drive vb.)" 
+                  icon={<ImageIcon size={14} />} 
+                  value={form.imageUrl} 
+                  onChange={v => setForm({...form, imageUrl: v})} 
+                  placeholder="https://drive.google.com/file/d/..." 
+                />
+                <p className="text-xs text-blue-800 mt-2">
+                  Not: Google Drive linki yapıştırırsanız sistem onu otomatik olarak direkt görsel linkine dönüştürecektir.
+                </p>
+              </div>
 
               {/* AI Video Button */}
               <button 
@@ -268,10 +513,20 @@ export default function AddProductPage() {
             <h2 className="text-2xl font-bold text-deep-earth mb-2" style={{ fontFamily: 'var(--font-display)' }}>
               Ürün Kaydedildi!
             </h2>
-            <p className="text-earth mb-2">{form.name}</p>
-            <p className="text-sm text-earth/60 mb-8">Ürün başarıyla oluşturuldu. (Demo simülasyonu)</p>
+            <p className="text-earth mb-6">{form.name}</p>
+            
+            <div className="bg-cream/30 border border-stone/20 rounded-2xl p-6 mb-8 max-w-sm mx-auto">
+              <p className="text-sm font-medium text-dark-brown">Ürününüzün Benzersiz RFID Kimliği</p>
+              <div className="bg-white px-4 py-3 rounded-xl border border-stone/30 mt-3">
+                <p className="text-xl font-mono font-bold text-terracotta tracking-wider">{savedProductId || 'Yükleniyor...'}</p>
+              </div>
+              <p className="text-xs text-earth mt-3 leading-relaxed">
+                Bu kimliği RFID sayfasına girerek ürünü sorgulayabilirsiniz. 
+              </p>
+            </div>
+
             <div className="flex flex-wrap gap-3 justify-center">
-              <button onClick={() => { setStep(1); setCapturedImage(null); setAiResult(null); setForm({ name:'', category:'', description:'', price:'', stock:'', materials:'', technique:'', culturalStory:'' }); }} className="btn-secondary">
+              <button onClick={() => { setStep(1); setCapturedImage(null); setAiResult(null); setForm({ name:'', category:'', price:'', materials:[], technique:[], culturalStory:'', imageUrl:'' }); setSavedProductId(null); }} className="btn-secondary">
                 Yeni Ürün Ekle
               </button>
               <Link href="/seller" className="btn-primary">
@@ -324,22 +579,6 @@ function FormField({ label, icon, value, onChange, type = 'text', placeholder })
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
         className="w-full px-4 py-3 rounded-xl border border-stone/30 bg-background focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20"
-      />
-    </div>
-  );
-}
-
-function FormTextArea({ label, icon, value, onChange, rows = 3 }) {
-  return (
-    <div>
-      <label className="text-sm font-medium text-dark-brown mb-1.5 flex items-center gap-1.5 block">
-        <span className="text-terracotta">{icon}</span> {label}
-      </label>
-      <textarea
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        rows={rows}
-        className="w-full px-4 py-3 rounded-xl border border-stone/30 bg-background focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 resize-none"
       />
     </div>
   );

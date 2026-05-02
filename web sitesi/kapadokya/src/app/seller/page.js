@@ -5,39 +5,45 @@ import Link from 'next/link';
 import { useAuth } from '../../contexts/AuthContext';
 import { productService } from '../../services/productService';
 import { orderService } from '../../services/orderService';
-import { inventoryService } from '../../services/inventoryService';
 import { formatPrice } from '../../utils/formatters';
 import { 
   Package, ShoppingCart, TrendingUp, AlertTriangle, Plus, BarChart3, 
-  Truck, Megaphone, Warehouse, Camera, ArrowRight, Film
+  Truck, Megaphone, Camera, ArrowRight, Film
 } from 'lucide-react';
 
 export default function SellerDashboard() {
   const { user, seller, isSeller, isAdmin } = useAuth();
-  const [stats, setStats] = useState({ products: 0, orders: 0, revenue: 0, criticalStock: 0 });
+  const [stats, setStats] = useState({ products: 0, orders: 0, revenue: 0 });
   const [recentOrders, setRecentOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
-      const sellerId = seller?.sellerId || 'seller-001';
-      const products = await productService.getBySeller(sellerId);
-      const orders = await orderService.getBySeller(sellerId);
-      const criticalItems = await inventoryService.getCriticalStock();
+      let products = [];
+      let orders = [];
+
+      if (isAdmin) {
+        products = await productService.getAll();
+        orders = await orderService.getAll();
+      } else {
+        const sellerId = seller?.sellerId || 'seller-001';
+        const rawProducts = await productService.getBySeller(sellerId);
+        products = rawProducts.filter(p => p.category === (seller?.specialty || 'Halı'));
+        orders = await orderService.getBySeller(sellerId);
+      }
       
       const revenue = orders.reduce((sum, o) => sum + (o.paymentStatus === 'paid' ? o.price : 0), 0);
       
       setStats({
         products: products.length,
         orders: orders.length,
-        revenue,
-        criticalStock: criticalItems.length
+        revenue
       });
       setRecentOrders(orders.slice(-3).reverse());
       setLoading(false);
     }
     load();
-  }, [seller]);
+  }, [seller, isAdmin]);
 
   if (!isSeller && !isAdmin) {
     return (
@@ -57,9 +63,11 @@ export default function SellerDashboard() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
           <div>
             <h1 className="text-2xl lg:text-3xl font-bold text-deep-earth" style={{ fontFamily: 'var(--font-display)' }}>
-              Satıcı Paneli
+              {isAdmin ? 'Sistem Yöneticisi Paneli' : 'Satıcı Paneli'}
             </h1>
-            <p className="text-earth">{seller?.storeName || 'Avanos Sanat Atölyesi'}</p>
+            <p className="text-earth">
+              {isAdmin ? 'Tüm Kapadokya e-ticaret ekosisteminin genel özeti' : 'Ahmet Usta - Kapadokya Halı ve Seramik Atölyesi'}
+            </p>
           </div>
           <Link href="/seller/add-product" className="btn-primary">
             <Plus size={18} />
@@ -68,21 +76,19 @@ export default function SellerDashboard() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           <StatCard icon={<Package size={22} />} label="Toplam Ürün" value={stats.products} color="bg-blue-50 text-blue-600" loading={loading} />
           <StatCard icon={<ShoppingCart size={22} />} label="Toplam Sipariş" value={stats.orders} color="bg-green-50 text-green-600" loading={loading} />
           <StatCard icon={<TrendingUp size={22} />} label="Toplam Gelir" value={formatPrice(stats.revenue)} color="bg-orange-50 text-orange-600" loading={loading} />
-          <StatCard icon={<AlertTriangle size={22} />} label="Kritik Stok" value={stats.criticalStock} color="bg-red-50 text-red-600" alert={stats.criticalStock > 0} loading={loading} />
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+          <QuickAction href="/seller/products" icon={<Package size={20} />} label="Ürünlerim" desc="Tüm ürünleri yönet" />
           <QuickAction href="/seller/add-product" icon={<Camera size={20} />} label="AI Ürün Kayıt" desc="Kamera ile ekle" />
-          <QuickAction href="/seller/inventory" icon={<Warehouse size={20} />} label="Stok Takip" desc="Stok yönetimi" />
           <QuickAction href="/seller/shipping" icon={<Truck size={20} />} label="Kargo" desc="Kargo seçenekleri" />
           <QuickAction href="/seller/advertisements" icon={<Megaphone size={20} />} label="Reklam" desc="AI reklam metni" />
           <QuickAction href="/seller/reports" icon={<BarChart3 size={20} />} label="Raporlar" desc="Satış raporları" />
-          <QuickAction href="#" icon={<Film size={20} />} label="AI Video" desc="Yakında" disabled />
         </div>
 
         {/* Recent Orders */}

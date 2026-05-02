@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { productService } from '../services/productService';
 import { currencyService } from '../services/currencyService';
+import { useAuth } from '../contexts/AuthContext';
 import { ArrowRight, Sparkles, Shield, Truck, Wifi, Star, Globe } from 'lucide-react';
 import { formatPrice } from '../utils/formatters';
 import { PRODUCT_CATEGORIES } from '../types';
@@ -23,16 +24,20 @@ export default function HomePage() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currency, setCurrency] = useState('TRY');
+  const { isSeller, isAdmin, seller } = useAuth();
   const { t } = useLanguage();
 
   useEffect(() => {
     async function loadProducts() {
-      const data = await productService.getAll();
+      let data = await productService.getAll();
+      if (isSeller && !isAdmin) {
+        data = data.filter(p => p.category === (seller?.specialty || 'Halı'));
+      }
       setProducts(data);
       setLoading(false);
     }
     loadProducts();
-  }, []);
+  }, [isSeller, isAdmin, seller]);
 
   return (
     <div>
@@ -145,16 +150,22 @@ export default function HomePage() {
           </div>
           
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-4">
-            {PRODUCT_CATEGORIES.map((cat, i) => (
-              <Link 
-                key={cat}
-                href={`/products?category=${encodeURIComponent(cat)}`}
-                className="card-hover group flex flex-col items-center gap-3 p-5 bg-white rounded-2xl shadow-sm border border-cream hover:border-terracotta/30"
-              >
-                <span className="text-3xl group-hover:scale-110 transition-transform">{categoryIcons[cat]}</span>
-                <span className="text-sm font-medium text-dark-brown text-center">{cat}</span>
-              </Link>
-            ))}
+            {loading ? (
+              Array(5).fill(0).map((_, i) => (
+                <div key={i} className="flex flex-col items-center gap-3 p-5 bg-white rounded-2xl shadow-sm border border-cream h-28 shimmer"></div>
+              ))
+            ) : (
+              Array.from(new Set(products.map(p => p.category))).map((cat, i) => (
+                <Link 
+                  key={cat}
+                  href={`/products?category=${encodeURIComponent(cat)}`}
+                  className="card-hover group flex flex-col items-center gap-3 p-5 bg-white rounded-2xl shadow-sm border border-cream hover:border-terracotta/30"
+                >
+                  <span className="text-3xl group-hover:scale-110 transition-transform">{categoryIcons[cat] || '✨'}</span>
+                  <span className="text-sm font-medium text-dark-brown text-center">{cat}</span>
+                </Link>
+              ))
+            )}
           </div>
         </div>
       </section>
@@ -258,6 +269,7 @@ function ProductCard({ product, index, currency }) {
       default: return '₺';
     }
   };
+
   return (
     <Link 
       href={`/products/${product.productId}`}
@@ -272,11 +284,6 @@ function ProductCard({ product, index, currency }) {
         <div className="absolute top-3 left-3">
           <span className="badge-premium">{product.category}</span>
         </div>
-        {product.stock <= 5 && (
-          <div className="absolute top-3 right-3 bg-red-500 text-white text-xs px-2.5 py-1 rounded-lg font-medium">
-            Son {product.stock} adet
-          </div>
-        )}
       </div>
       <div className="p-5">
         <h3 className="font-semibold text-dark-brown mb-1 group-hover:text-terracotta transition-colors" style={{ fontFamily: 'var(--font-display)' }}>
@@ -292,7 +299,6 @@ function ProductCard({ product, index, currency }) {
               </div>
             )}
           </div>
-          <span className="text-xs text-earth bg-cream px-2 py-1 rounded-lg">{product.stock} stokta</span>
         </div>
       </div>
     </Link>

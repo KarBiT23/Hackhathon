@@ -19,7 +19,7 @@ export const tr = {
   // Footer
   footer: {
     about: "Hakkımızda",
-    aboutText: "Kapadokya'nın binlerce yıllık zanaat geleneğini modern teknoloji ile buluşturuyoruz. Her bir ürün benzersizdir ve yerel ustalar tarafından elde üretilmektedir.",
+    aboutText: "Kapadokya'nın binlerce yıllık zanaat geleneğini modern teknoloji ile buluşturuyor ve ürünlerin orijinalliğini koruyoruz. Her bir ürün benzersizdir ve yerel ustalar tarafından elde üretilmektedir.",
     quickLinks: "Hızlı Bağlantılar",
     contact: "İletişim",
     address: "Avanos, Nevşehir, Türkiye",
@@ -30,7 +30,7 @@ export const tr = {
   home: {
     heroTitle: "Kapadokya'nın Zanaat Mirasını",
     heroHighlight: "Dijital Keşfedin",
-    heroDesc: "Binlerce yıllık el sanatları geleneğini modern teknoloji ile buluşturuyoruz. Her ürünün eşsiz hikayesini RFID ile takip edin, yapay zeka ile kişiselleştirin.",
+    heroDesc: "Binlerce yıllık el sanatları geleneğini modern teknoloji ile buluşturuyor ve ürünlerin orijinalliğini koruyoruz. Her ürünün eşsiz hikayesini RFID ile takip edin, yapay zeka ile kişiselleştirin.",
     exploreBtn: "Koleksiyonu Keşfet",
     learnMoreBtn: "Teknolojimizi İncele",
     featuresTitle: "Gelenek ve Teknolojinin Buluşması",

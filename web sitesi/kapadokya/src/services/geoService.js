@@ -85,25 +85,29 @@ class GeoService {
    * Üretim yeri ile teslimat yeri arasındaki mesafeyi hesaplar
    */
   async getRouteDistance(originCoords, destCoords) {
-    // Demo mock fallback
-    if (originCoords && destCoords) {
-       const distance = this.calculateHaversineDistance(
-         originCoords.lat, originCoords.lng,
-         destCoords.lat, destCoords.lng
-       );
-       return Math.round(distance);
-    }
+    if (!originCoords || !destCoords) return null;
     
-    return 730; // Default distance
-    
-    /* Gerçek kullanım örneği (OpenRouteService):
     try {
-      // ORS çağrısı
-      return distanceInKm;
+      const res = await fetch('/api/routing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ origin: originCoords, dest: destCoords })
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        return data; // { distanceKm, geometry }
+      }
     } catch (e) {
-      console.error('Routing error', e);
+      console.warn('Routing error via API, falling back to Haversine', e);
     }
-    */
+    
+    // Fallback
+    const distance = this.calculateHaversineDistance(
+      originCoords.lat, originCoords.lng,
+      destCoords.lat, destCoords.lng
+    );
+    return { distanceKm: Math.round(distance), geometry: null };
   }
 
   /**
@@ -112,18 +116,22 @@ class GeoService {
   async getDeliveryRoute(originStr, destStr) {
     const origin = await this.geocodeAddress(originStr);
     const dest = await this.geocodeAddress(destStr);
-    let distanceKm = await this.getRouteDistance(origin, dest);
+    
+    const routeData = await this.getRouteDistance(origin, dest);
+    let distanceKm = routeData ? routeData.distanceKm : 730;
+    const geometry = routeData ? routeData.geometry : null;
     
     // Fallback if 0
     if (distanceKm === 0) distanceKm = 730;
 
-    const isDemo = !(origin.isReal && dest.isReal);
+    const isDemo = !(origin.isReal && dest.isReal) || !geometry;
 
     return {
       origin,
       dest,
       distanceKm,
-      dataSource: isDemo ? 'Mock Fallback (Haversine)' : 'OpenStreetMap / Nominatim',
+      geometry, // Eklendi: Rota çizgisi koordinatları
+      dataSource: !geometry ? 'Mock Fallback (Haversine)' : 'OpenRouteService / Nominatim',
       isDemo
     };
   }

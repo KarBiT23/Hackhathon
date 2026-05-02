@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
+import { useAuth } from '../../../contexts/AuthContext';
 import { reportService } from '../../../services/reportService';
 import { currencyService } from '../../../services/currencyService';
 import { formatPrice } from '../../../utils/formatters';
@@ -17,6 +18,7 @@ export default function ReportsPage() {
   const [countrySales, setCountrySales] = useState([]);
   const [selectedPeriod, setSelectedPeriod] = useState('monthly');
   const [loading, setLoading] = useState(true);
+  const { isAdmin } = useAuth();
 
   // Hackathon Modules State
   const [selectedCurrency, setSelectedCurrency] = useState('EUR');
@@ -131,33 +133,35 @@ export default function ReportsPage() {
               </div>
             </div>
 
-            {/* Top Products */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-cream">
-              <h3 className="font-semibold text-dark-brown mb-4 flex items-center gap-2">
-                <Award size={18} className="text-terracotta" />
-                En Çok Satan Ürünler
-              </h3>
-              <div className="space-y-3">
-                {currentReport.topProducts.map((product, index) => (
-                  <div key={product.productId} className="flex items-center justify-between p-4 bg-cream/30 rounded-xl">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm ${
-                        index === 0 ? 'bg-yellow-100 text-yellow-700' :
-                        index === 1 ? 'bg-gray-100 text-gray-700' :
-                        'bg-orange-100 text-orange-700'
-                      }`}>
-                        #{index + 1}
+            {/* Top Products - Only for Admin */}
+            {isAdmin && (
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-cream">
+                <h3 className="font-semibold text-dark-brown mb-4 flex items-center gap-2">
+                  <Award size={18} className="text-terracotta" />
+                  En Çok Satan Ürünler
+                </h3>
+                <div className="space-y-3">
+                  {currentReport.topProducts.map((product, index) => (
+                    <div key={product.productId} className="flex items-center justify-between p-4 bg-cream/30 rounded-xl">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm ${
+                          index === 0 ? 'bg-yellow-100 text-yellow-700' :
+                          index === 1 ? 'bg-gray-100 text-gray-700' :
+                          'bg-orange-100 text-orange-700'
+                        }`}>
+                          #{index + 1}
+                        </div>
+                        <div>
+                          <p className="font-medium text-dark-brown">{product.name}</p>
+                          <p className="text-xs text-earth">{product.totalSold} adet satıldı</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-medium text-dark-brown">{product.name}</p>
-                        <p className="text-xs text-earth">{product.totalSold} adet satıldı</p>
-                      </div>
+                      <span className="font-bold text-terracotta text-lg">{formatPrice(product.revenue)}</span>
                     </div>
-                    <span className="font-bold text-terracotta text-lg">{formatPrice(product.revenue)}</span>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
             {/* Hackathon Rapor Modülleri */}
             <div className="mt-12 pt-8 border-t border-cream">
               <h2 className="text-xl font-bold text-deep-earth mb-6" style={{ fontFamily: 'var(--font-display)' }}>Sürdürülebilirlik ve Global Satış Analizi</h2>

@@ -17,7 +17,7 @@ const roles = [
     role: 'seller', 
     icon: <Store size={28} />, 
     title: 'Satıcı',
-    desc: 'Ürünlerinizi AI ile yönetin, stok takip edin ve satış raporlarınızı görüntüleyin.',
+    desc: 'Ürünlerinizi AI ile yönetin ve satış raporlarınızı görüntüleyin.',
     color: 'from-warm-orange to-terracotta'
   },
   { 

@@ -25,7 +25,7 @@ class CurrencyService {
   /**
    * Kurları EVDS API üzerinden getirir.
    */
-  async getExchangeRate(currency) {
+  async getExchangeRate(currency, forceRefresh = false) {
     if (currency === 'TRY') {
       return {
         currency: 'TRY',
@@ -37,7 +37,7 @@ class CurrencyService {
       };
     }
 
-    if (this.cache[currency]) {
+    if (!forceRefresh && this.cache[currency]) {
       return this.cache[currency];
     }
 
@@ -78,7 +78,7 @@ class CurrencyService {
   /**
    * TRY fiyatı istenen para birimine çevirir.
    */
-  async convertTRYPrice(amountTRY, currency) {
+  async convertTRYPrice(amountTRY, currency, forceRefresh = false) {
     if (currency === 'TRY') {
       return {
         amountTRY,
@@ -92,7 +92,7 @@ class CurrencyService {
       };
     }
 
-    const rateData = await this.getExchangeRate(currency);
+    const rateData = await this.getExchangeRate(currency, forceRefresh);
     const convertedPrice = amountTRY / rateData.rate;
 
     return {

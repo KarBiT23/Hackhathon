@@ -19,7 +19,7 @@ export const en = {
   // Footer
   footer: {
     about: "About Us",
-    aboutText: "We bring the millennia-old craft tradition of Cappadocia together with modern technology. Each product is unique and handcrafted by local artisans.",
+    aboutText: "We bring the millennia-old craft tradition of Cappadocia together with modern technology and preserve the authenticity of the products. Each product is unique and handcrafted by local artisans.",
     quickLinks: "Quick Links",
     contact: "Contact",
     address: "Avanos, Nevsehir, Turkey",
@@ -30,7 +30,7 @@ export const en = {
   home: {
     heroTitle: "Digitally Discover the Craft Heritage of",
     heroHighlight: "Cappadocia",
-    heroDesc: "We bring the millennia-old craft tradition together with modern technology. Track the unique story of each product with RFID, personalize it with AI.",
+    heroDesc: "We bring the millennia-old craft tradition together with modern technology and preserve the authenticity of the products. Track the unique story of each product with RFID, personalize it with AI.",
     exploreBtn: "Explore Collection",
     learnMoreBtn: "Learn About Our Technology",
     featuresTitle: "Where Tradition Meets Technology",

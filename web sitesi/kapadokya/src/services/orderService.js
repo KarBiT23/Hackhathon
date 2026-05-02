@@ -23,16 +23,24 @@ export const orderService = {
   },
 
   create: async (orderData) => {
-    await delay(500);
-    const newOrder = {
-      ...orderData,
-      orderId: generateId('order-'),
-      createdAt: new Date().toISOString(),
-      orderDate: new Date().toISOString().split('T')[0],
-      orderTime: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
-    };
-    mockOrders.push(newOrder);
-    return newOrder;
+    try {
+      const res = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderData)
+      });
+      
+      const result = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(result.error || 'Sipariş oluşturulamadı');
+      }
+      
+      return result.order;
+    } catch (e) {
+      console.error("Sipariş hatası:", e.message);
+      throw e;
+    }
   },
 
   updateStatus: async (orderId, paymentStatus) => {

@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { mockUsers, mockSellers } from '../data/mockUsers';
 
 const AuthContext = createContext(null);
@@ -9,6 +10,7 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [seller, setSeller] = useState(null);
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   const login = useCallback(async (role) => {
     setLoading(true);
@@ -42,7 +44,8 @@ export function AuthProvider({ children }) {
   const logout = useCallback(() => {
     setUser(null);
     setSeller(null);
-  }, []);
+    router.push('/');
+  }, [router]);
 
   const isAdmin = user?.role === 'admin';
   const isSeller = user?.role === 'seller';
