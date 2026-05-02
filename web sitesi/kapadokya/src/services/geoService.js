@@ -22,16 +22,33 @@ class GeoService {
    * Demo amacıyla önbellekteki yerleri kullanır, bulunamazsa Nominatim'e yönlendirilebilir bir yapı.
    */
   async geocodeAddress(address) {
-    if (!address) return MOCK_LOCATIONS['Avanos'];
+    if (!address) return { ...MOCK_LOCATIONS['Avanos'], isReal: false };
+
+    try {
+      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`;
+      const response = await fetch(url);
+      const data = await response.json();
+      
+      if (data && data.length > 0) {
+        return {
+          lat: parseFloat(data[0].lat),
+          lng: parseFloat(data[0].lon),
+          isReal: true
+        };
+      }
+    } catch (e) {
+      console.warn("Nominatim error, falling back to mock:", e);
+    }
+
     // Demo mock fallback
     for (const [key, coords] of Object.entries(MOCK_LOCATIONS)) {
       if (address.toLowerCase().includes(key.toLowerCase())) {
-        return coords;
+        return { ...coords, isReal: false };
       }
     }
     
     // Default fallback
-    return MOCK_LOCATIONS['İstanbul'];
+    return { ...MOCK_LOCATIONS['İstanbul'], isReal: false };
     
     /* Gerçek kullanım örneği (Nominatim):
     try {
@@ -100,11 +117,14 @@ class GeoService {
     // Fallback if 0
     if (distanceKm === 0) distanceKm = 730;
 
+    const isDemo = !(origin.isReal && dest.isReal);
+
     return {
       origin,
       dest,
       distanceKm,
-      dataSource: 'OpenStreetMap / Nominatim / OpenRouteService (Mock)'
+      dataSource: isDemo ? 'Mock Fallback (Haversine)' : 'OpenStreetMap / Nominatim',
+      isDemo
     };
   }
 }

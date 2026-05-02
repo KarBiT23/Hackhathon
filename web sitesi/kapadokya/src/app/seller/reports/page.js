@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { reportService } from '../../../services/reportService';
+import { currencyService } from '../../../services/currencyService';
 import { formatPrice } from '../../../utils/formatters';
 import { ArrowLeft, BarChart3, TrendingUp, Globe, Award, Calendar, DollarSign, ShoppingCart, Package, Leaf, MapPin, Route } from 'lucide-react';
 
@@ -16,6 +17,10 @@ export default function ReportsPage() {
   const [countrySales, setCountrySales] = useState([]);
   const [selectedPeriod, setSelectedPeriod] = useState('monthly');
   const [loading, setLoading] = useState(true);
+
+  // Hackathon Modules State
+  const [selectedCurrency, setSelectedCurrency] = useState('EUR');
+  const [currencyData, setCurrencyData] = useState(null);
 
   useEffect(() => {
     async function load() {
@@ -31,6 +36,17 @@ export default function ReportsPage() {
   }, []);
 
   const currentReport = reports.find(r => r.type === selectedPeriod) || reports[0];
+
+  useEffect(() => {
+    async function updateCurrency() {
+      if (currentReport) {
+        const revenue = currentReport.totalRevenueTRY || currentReport.totalRevenue || 0;
+        const data = await currencyService.convertTRYPrice(revenue, selectedCurrency);
+        setCurrencyData(data);
+      }
+    }
+    updateCurrency();
+  }, [selectedCurrency, currentReport]);
 
   return (
     <div className="bg-background min-h-screen py-8">
@@ -205,30 +221,48 @@ export default function ReportsPage() {
 
                 {/* 3. Canlı Kur ile Gelir Özeti */}
                 <div className="bg-[#F5E6D3] rounded-2xl p-6 shadow-sm border border-stone/20">
-                  <div className="flex items-center gap-2 mb-4">
-                    <DollarSign size={20} className="text-[#C65A2E]" />
-                    <h3 className="font-semibold text-[#3E2A1F]">Canlı Kur Gelir Özeti</h3>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <DollarSign size={20} className="text-[#C65A2E]" />
+                      <h3 className="font-semibold text-[#3E2A1F]">Canlı Kur Gelir Özeti</h3>
+                    </div>
+                    <select 
+                      className="bg-white border border-[#C65A2E]/30 rounded px-2 py-1 text-xs"
+                      value={selectedCurrency}
+                      onChange={(e) => setSelectedCurrency(e.target.value)}
+                    >
+                      <option value="USD">USD</option>
+                      <option value="EUR">EUR</option>
+                      <option value="GBP">GBP</option>
+                    </select>
                   </div>
+                  
                   <div className="space-y-4">
                     <div className="bg-white/50 p-3 rounded-xl border border-[#C65A2E]/20">
-                      <p className="text-xs text-[#5A3E2B]">TRY Cinsinden Gelir</p>
+                      <p className="text-xs text-[#5A3E2B]">Aylık Gelir</p>
                       <p className="text-lg font-bold text-[#3E2A1F]">₺{currentReport.totalRevenueTRY || currentReport.totalRevenue}</p>
                     </div>
                     <div className="bg-white p-4 rounded-xl shadow-sm border border-[#C65A2E]/30 relative overflow-hidden">
                       <div className="absolute top-0 right-0 p-2 bg-[#C65A2E] rounded-bl-lg">
-                        <span className="text-[10px] text-white font-bold">{currentReport.selectedCurrency || 'EUR'}</span>
+                        <span className="text-[10px] text-white font-bold">{selectedCurrency}</span>
                       </div>
-                      <p className="text-xs text-[#5A3E2B] mb-1">Döviz Karşılığı Tahmini Gelir</p>
+                      <p className="text-xs text-[#5A3E2B] mb-1">{selectedCurrency} Karşılığı</p>
                       <p className="text-3xl font-black text-[#C65A2E]">
-                        {currentReport.selectedCurrency === 'USD' ? '$' : currentReport.selectedCurrency === 'EUR' ? '€' : '£'}
-                        {currentReport.convertedRevenue || 0}
+                        {selectedCurrency === 'USD' ? '$' : selectedCurrency === 'EUR' ? '€' : '£'}
+                        {currencyData?.convertedPrice ? currencyData.convertedPrice.toFixed(2) : 0}
                       </p>
-                      <p className="text-[10px] text-[#5A3E2B] mt-2 flex items-center gap-1">
-                        Kur Kaynağı: {currentReport.exchangeRateSource || 'TCMB (Mock)'}
-                      </p>
+                      <div className="text-[10px] text-[#5A3E2B] mt-3 space-y-0.5">
+                        <p>Kur Kaynağı: <span className="font-medium">{currencyData?.source || 'TCMB EVDS'}</span></p>
+                        {currencyData?.seriesCode && <p>EVDS Seri Kodu: <span className="font-medium">{currencyData.seriesCode}</span></p>}
+                        {currencyData?.lastUpdated && <p>Son Güncelleme: <span className="font-medium">{currencyData.lastUpdated}</span></p>}
+                      </div>
                     </div>
                   </div>
-                  <p className="text-[10px] text-[#5A3E2B]/70 mt-4 italic">Gelir analizi TCMB güncel kur referans alınarak döviz cinsine çevrilmiştir.</p>
+                  {currencyData?.isDemo && (
+                    <p className="text-[10px] text-[#C65A2E] mt-4 leading-tight italic font-medium">
+                      Demo Modu: Döviz kuru prototip amaçlı gösterilmektedir. Gerçek kullanımda kur TCMB EVDS API üzerinden çekilecektir.
+                    </p>
+                  )}
                 </div>
               </div>
             </div>

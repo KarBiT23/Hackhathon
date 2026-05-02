@@ -244,7 +244,15 @@ function FeatureItem({ icon, title, desc }) {
 }
 
 function ProductCard({ product, index, currency }) {
-  const convertedPrice = currencyService.convertTRYPrice(product.price, currency);
+  const [convertedData, setConvertedData] = useState(null);
+
+  useEffect(() => {
+    async function convert() {
+      const result = await currencyService.convertTRYPrice(product.price, currency);
+      setConvertedData(result);
+    }
+    convert();
+  }, [product.price, currency]);
   
   const getCurrencySymbol = (curr) => {
     switch(curr) {
@@ -282,9 +290,9 @@ function ProductCard({ product, index, currency }) {
         <div className="flex items-center justify-between">
           <div>
             <span className="text-xl font-bold text-terracotta">{formatPrice(product.price)}</span>
-            {currency !== 'TRY' && (
+            {currency !== 'TRY' && convertedData && (
               <div className="text-xs text-earth mt-0.5 font-medium">
-                ≈ {getCurrencySymbol(currency)}{(convertedPrice).toFixed(2)}
+                ≈ {getCurrencySymbol(currency)}{(convertedData.convertedPrice).toFixed(2)}
               </div>
             )}
           </div>
