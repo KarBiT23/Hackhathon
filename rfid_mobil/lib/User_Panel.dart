@@ -1,7 +1,11 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:nfc_manager/nfc_manager.dart';
+import 'package:image_picker/image_picker.dart';
 
 import 'seller_products_page.dart';
 
@@ -18,7 +22,30 @@ class _UserPanelState extends State<UserPanel> {
   final priceController = TextEditingController();
   final rfidIdController = TextEditingController();
   final descriptionController = TextEditingController();
-  final imageController = TextEditingController();
+
+  File? selectedImageFile;
+  String imageBase64 = "";
+
+  Future<void> takePhoto() async {
+    final picker = ImagePicker();
+
+    final pickedFile = await picker.pickImage(
+      source: ImageSource.camera,
+      imageQuality: 45,
+      maxWidth: 800,
+      maxHeight: 800,
+    );
+
+    if (pickedFile == null) return;
+
+    final file = File(pickedFile.path);
+    final bytes = await file.readAsBytes();
+
+    setState(() {
+      selectedImageFile = file;
+      imageBase64 = base64Encode(bytes);
+    });
+  }
 
   Future<void> startNfcRead() async {
     final isAvailable =
@@ -50,17 +77,6 @@ class _UserPanelState extends State<UserPanel> {
     );
   }
 
-  String fixImagePath(String value) {
-    String image = value.trim().replaceAll("\\", "/");
-
-    final assetIndex = image.toLowerCase().indexOf("assets/");
-    if (assetIndex != -1) {
-      image = image.substring(assetIndex);
-    }
-
-    return image;
-  }
-
   Future<void> addProduct() async {
     final user = FirebaseAuth.instance.currentUser;
 
@@ -76,13 +92,12 @@ class _UserPanelState extends State<UserPanel> {
     final price = priceController.text.trim();
     final rfid = rfidIdController.text.trim();
     final description = descriptionController.text.trim();
-    final image = fixImagePath(imageController.text);
 
     final fiyat = double.tryParse(price) ?? 0;
 
-    if (name.isEmpty || rfid.isEmpty || image.isEmpty) {
+    if (name.isEmpty || rfid.isEmpty || imageBase64.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Ürün adı, RFID ve resim boş olamaz")),
+        const SnackBar(content: Text("Ürün adı, RFID ve fotoğraf boş olamaz")),
       );
       return;
     }
@@ -107,7 +122,7 @@ class _UserPanelState extends State<UserPanel> {
         "Explanation": description,
         "RFID": rfid,
         "fiyat": fiyat,
-        "imageUrl": image,
+        "imageBase64": imageBase64,
         "sellerId": user.uid,
         "createdAt": FieldValue.serverTimestamp(),
       });
@@ -117,7 +132,11 @@ class _UserPanelState extends State<UserPanel> {
       priceController.clear();
       rfidIdController.clear();
       descriptionController.clear();
-      imageController.clear();
+
+      setState(() {
+        selectedImageFile = null;
+        imageBase64 = "";
+      });
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Ürün Firebase'e kaydedildi")),
@@ -160,7 +179,6 @@ class _UserPanelState extends State<UserPanel> {
     priceController.dispose();
     rfidIdController.dispose();
     descriptionController.dispose();
-    imageController.dispose();
 
     try {
       NfcManager.instance.stopSession();
@@ -232,11 +250,33 @@ class _UserPanelState extends State<UserPanel> {
                 icon: Icons.payments,
                 keyboardType: TextInputType.number,
               ),
-              field(
-                controller: imageController,
-                label: "imageUrl",
-                hint: "assets/bowl.jpeg",
-                icon: Icons.image,
+
+              if (selectedImageFile != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(14),
+                    child: Image.file(
+                      selectedImageFile!,
+                      height: 180,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+
+              SizedBox(
+                width: double.infinity,
+                height: 46,
+                child: ElevatedButton.icon(
+                  onPressed: takePhoto,
+                  icon: const Icon(Icons.camera_alt),
+                  label: const Text("Kamera ile Fotoğraf Çek"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
               ),
 
               const SizedBox(height: 16),
