@@ -934,21 +934,32 @@ function App() {
           <p>Üretilen sinematik videoyu aşağıdan izleyebilirsiniz.</p>
           <video src={resultVideoUrl} controls className="result-video" autoPlay />
           
-          <button 
-            className="btn-generate" 
-            onClick={() => {
-              // Modalı açarken kullanıcının bağlı hesaplarını otomatik seçili yapabiliriz
-              setShareData({
-                ...shareData,
-                shareSuccess: false,
-                platforms: { ...socialAccounts }
-              });
-              setIsShareModalOpen(true);
-            }} 
-            style={{ marginTop: '2rem', background: 'linear-gradient(135deg, #10b981, #059669)' }}
-          >
-            🌐 Sosyal Medyada Tek Tuşla Paylaş
-          </button>
+          <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
+            <button 
+              className="btn-generate" 
+              onClick={() => {
+                // Modalı açarken kullanıcının bağlı hesaplarını otomatik seçili yapabiliriz
+                setShareData({
+                  ...shareData,
+                  shareSuccess: false,
+                  platforms: { ...socialAccounts }
+                });
+                setIsShareModalOpen(true);
+              }} 
+              style={{ flex: 1, background: 'linear-gradient(135deg, #10b981, #059669)', margin: 0 }}
+            >
+              🌐 Sosyal Medyada Paylaş
+            </button>
+            <button 
+              className="btn-generate" 
+              onClick={() => {
+                window.location.href = 'http://localhost:3000/seller/products';
+              }} 
+              style={{ flex: 1, background: 'linear-gradient(135deg, #c65a2e, #b04921)', margin: 0 }}
+            >
+              🛍️ Ürünlere Geri Dön
+            </button>
+          </div>
         </div>
       )}
 

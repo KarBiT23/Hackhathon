@@ -163,8 +163,8 @@ export default function AddProductPage() {
     const imageToSend = uploadedFile || capturedImage;
     const result = await aiService.analyzeProduct(imageToSend);
 
-    if (!isAdmin && result.category !== 'Halı') {
-      alert(`Ahmet Usta, siz bir Halı ustasısınız. Yapay zeka bu görseli '${result.category}' olarak algıladı. Sisteme yalnızca 'Halı' görselleri yükleyebilirsiniz.`);
+    if (!isAdmin && result.category !== 'Çömlek') {
+      alert(`Ahmet Usta, siz bir Çömlek ustasısınız. Yapay zeka bu görseli '${result.category}' olarak algıladı. Sisteme yalnızca 'Çömlek' görselleri yükleyebilirsiniz.`);
       setAnalyzing(false);
       return;
     }

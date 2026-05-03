@@ -59,8 +59,8 @@ export const mockSellers = [
   {
     sellerId: 'seller-001',
     userId: 'user-003',
-    storeName: 'Ahmet Usta - Kapadokya Halı Atölyesi',
-    specialty: 'Halı',
+    storeName: 'Ahmet Usta - Kapadokya Çömlek Atölyesi',
+    specialty: 'Çömlek',
     phone: '+90 532 333 4455',
     address: 'Avanos Çarşı Mah. No:12, Nevşehir',
     createdAt: '2025-11-20T09:00:00Z'

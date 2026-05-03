@@ -90,3 +90,28 @@ export async function POST(request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+
+// DELETE: Bir ürünün video atamasını kaldır
+export async function DELETE(request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const productId = searchParams.get('productId');
+    
+    if (!productId) {
+      return NextResponse.json({ error: 'productId gerekli' }, { status: 400 });
+    }
+
+    const mappingPath = path.join(OUTPUTS_DIR, 'product_video_map.json');
+    if (fs.existsSync(mappingPath)) {
+      let mapping = JSON.parse(fs.readFileSync(mappingPath, 'utf8'));
+      if (mapping[productId]) {
+        delete mapping[productId];
+        fs.writeFileSync(mappingPath, JSON.stringify(mapping, null, 2));
+      }
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { productService } from '../../../services/productService';
 import { useAuth } from '../../../contexts/AuthContext';
 import { convertDriveUrl } from '../../../utils/formatters';
-import { ArrowLeft, Edit2, Package, Search, Plus, X, Save, Image as ImageIcon, Tag, Loader2 } from 'lucide-react';
+import { ArrowLeft, Edit2, Package, Search, Plus, X, Save, Image as ImageIcon, Tag, Loader2, Film, Trash2 } from 'lucide-react';
 
 const compressImage = (base64Str, maxWidth = 800, quality = 0.7) => {
   return new Promise((resolve) => {
@@ -40,6 +40,65 @@ export default function SellerProductsPage() {
   const [editingProduct, setEditingProduct] = useState(null);
   const [editForm, setEditForm] = useState({ name: '', price: '', imageUrl: '', category: '', artisanName: '', productionLocation: '' });
   const [saving, setSaving] = useState(false);
+  const [generatingVideoFor, setGeneratingVideoFor] = useState(null);
+  const [assignedVideos, setAssignedVideos] = useState({});
+
+  const handleDeleteVideo = async (productId) => {
+    if (!confirm('Bu ürüne atanmış AI videoyu kaldırmak istediğinize emin misiniz?')) return;
+    try {
+      await fetch(`/api/ai-videos?productId=${productId}`, { method: 'DELETE' });
+      await loadProducts();
+      alert('Video başarıyla silindi!');
+    } catch (error) {
+      console.error(error);
+      alert('Video silinirken bir hata oluştu.');
+    }
+  };
+
+  const handleGenerateVideo = async (productId) => {
+    setGeneratingVideoFor(productId);
+    
+    // Mevcut videoları kaydet (yeni video algılamak için)
+    let existingIds = [];
+    try {
+      const res = await fetch('/api/ai-videos');
+      const data = await res.json();
+      existingIds = (data.videos || []).map(v => v.id);
+    } catch (e) {}
+
+    // AI-VİDEO sitesini aç
+    window.open('http://localhost:5173', '_blank');
+    fetch('/api/open-folder', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'start-ai-video' })
+    }).catch(() => {});
+
+    // Yeni video oluşturulana kadar her 3 saniyede kontrol et (max 10 dakika)
+    let attempts = 0;
+    const maxAttempts = 200;
+    const pollInterval = setInterval(async () => {
+      attempts++;
+      if (attempts > maxAttempts) { clearInterval(pollInterval); setGeneratingVideoFor(null); return; }
+      try {
+        const res = await fetch('/api/ai-videos');
+        const data = await res.json();
+        const newVideo = (data.videos || []).find(v => !existingIds.includes(v.id));
+        if (newVideo) {
+          clearInterval(pollInterval);
+          // Videoyu ürüne ata
+          await fetch('/api/ai-videos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ productId, videoFolderId: newVideo.id })
+          });
+          setGeneratingVideoFor(null);
+          await loadProducts();
+          alert('AI Video başarıyla ürüne eklendi!');
+        }
+      } catch (e) {}
+    }, 3000);
+  };
 
   useEffect(() => {
     loadProducts();
@@ -53,9 +112,20 @@ export default function SellerProductsPage() {
     } else {
       const sellerId = seller?.sellerId || 'seller-001';
       const rawProds = await productService.getBySeller(sellerId);
-      prods = rawProds.filter(p => p.category === (seller?.specialty || 'Halı'));
+      prods = rawProds.filter(p => p.category === (seller?.specialty || 'Çömlek'));
     }
     setProducts(prods);
+
+    try {
+      const res = await fetch('/api/ai-videos');
+      const data = await res.json();
+      const videoMap = {};
+      (data.videos || []).forEach(v => {
+        if (v.productId) videoMap[v.productId] = v.id;
+      });
+      setAssignedVideos(videoMap);
+    } catch(e) {}
+
     setLoading(false);
   }
 
@@ -164,11 +234,33 @@ export default function SellerProductsPage() {
                   </div>
                   <button 
                     onClick={() => handleEditClick(product)}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-colors font-medium"
+                    className="w-full flex items-center justify-center gap-2 py-2.5 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-colors font-medium mb-2"
                   >
                     <Edit2 size={16} />
                     Ürünü Düzenle
                   </button>
+                  
+                  {assignedVideos[product.productId] ? (
+                    <button 
+                      onClick={() => handleDeleteVideo(product.productId)}
+                      className="w-full flex items-center justify-center gap-2 py-2.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-colors font-medium"
+                    >
+                      <Trash2 size={16} />
+                      Videoyu Sil
+                    </button>
+                  ) : (
+                    <button 
+                      onClick={() => handleGenerateVideo(product.productId)}
+                      disabled={generatingVideoFor === product.productId}
+                      className="w-full flex items-center justify-center gap-2 py-2.5 bg-purple-50 text-purple-600 rounded-xl hover:bg-purple-100 transition-colors font-medium"
+                    >
+                      {generatingVideoFor === product.productId ? (
+                        <><Loader2 size={16} className="animate-spin" /> Bekleniyor...</>
+                      ) : (
+                        <><Film size={16} /> AI Video Ekle</>
+                      )}
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

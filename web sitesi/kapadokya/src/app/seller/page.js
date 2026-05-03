@@ -28,7 +28,7 @@ export default function SellerDashboard() {
       } else {
         const sellerId = seller?.sellerId || 'seller-001';
         const rawProducts = await productService.getBySeller(sellerId);
-        products = rawProducts.filter(p => p.category === (seller?.specialty || 'Halı'));
+        products = rawProducts.filter(p => p.category === (seller?.specialty || 'Çömlek'));
         orders = await orderService.getBySeller(sellerId);
       }
       
@@ -66,7 +66,7 @@ export default function SellerDashboard() {
               {isAdmin ? 'Sistem Yöneticisi Paneli' : 'Satıcı Paneli'}
             </h1>
             <p className="text-earth">
-              {isAdmin ? 'Tüm Kapadokya e-ticaret ekosisteminin genel özeti' : 'Ahmet Usta - Kapadokya Halı Atölyesi'}
+              {isAdmin ? 'Tüm Kapadokya e-ticaret ekosisteminin genel özeti' : 'Ahmet Usta - Kapadokya Çömlek Atölyesi'}
             </p>
           </div>
           <Link href="/seller/add-product" className="btn-primary">
@@ -83,11 +83,9 @@ export default function SellerDashboard() {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
           <QuickAction href="/seller/products" icon={<Package size={20} />} label="Ürünlerim" desc="Tüm ürünleri yönet" />
           <QuickAction href="/seller/add-product" icon={<Camera size={20} />} label="AI Ürün Kayıt" desc="Kamera ile ekle" />
-          <QuickAction href="/seller/shipping" icon={<Truck size={20} />} label="Kargo" desc="Kargo seçenekleri" />
-          <QuickAction href="/seller/advertisements" icon={<Megaphone size={20} />} label="Reklam" desc="AI reklam metni" />
           <QuickAction href="/seller/reports" icon={<BarChart3 size={20} />} label="Raporlar" desc="Satış raporları" />
         </div>
 
