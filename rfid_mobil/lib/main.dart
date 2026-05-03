@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart'; // 🔥 EKLENDİ
@@ -6,12 +7,23 @@ import 'package:cloud_firestore/cloud_firestore.dart'; // 🔥 EKLENDİ
 import 'User_Panel.dart';
 import 'buyer_panel.dart';
 import 'lang.dart';
+import 'logistics/providers/logistics_provider.dart';
+import 'logistics/providers/user_provider.dart';
+import 'logistics/screens/profile_onboarding_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
 
-  runApp(const MyApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => UserProvider()),
+        ChangeNotifierProvider(create: (_) => LogisticsProvider()),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatefulWidget {
@@ -24,9 +36,12 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    final userProvider = context.watch<UserProvider>();
+
+    return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: LoginPanel(),
+      theme: userProvider.theme,
+      home: const LoginPanel(),
     );
   }
 }
@@ -87,7 +102,10 @@ class _LoginPanelState extends State<LoginPanel> {
       if (role == "seller") {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const UserPanel()),
+          MaterialPageRoute(
+            builder: (context) =>
+                const ProfileOnboardingPage(nextPage: UserPanel()),
+          ),
         );
       } else if (role == "buyer") {
         Navigator.pushReplacement(
@@ -238,6 +256,7 @@ class _LoginPanelState extends State<LoginPanel> {
                           child: Text(Lang.t("login")),
                         ),
                       ),
+
                     ],
                   ),
                 ),
