@@ -34,8 +34,8 @@ export async function POST(request) {
       const desktopPath = path.resolve(process.env.USERPROFILE || process.env.HOME, 'Desktop', 'AI-VİDEO');
       
       // Video backend ve frontend başlat
-      exec(`start /B cmd /c "cd /d ${desktopPath} && uvicorn backend.main:app --host 0.0.0.0 --port 8001"`, { detached: true });
-      exec(`start /B cmd /c "cd /d ${desktopPath}\\frontend && npm run dev"`, { detached: true });
+      exec(`start cmd /c "cd /d ${desktopPath} && uvicorn main:app --host 0.0.0.0 --port 8001"`, { detached: true });
+      exec(`start cmd /c "cd /d ${desktopPath}\\frontend && npm run dev"`, { detached: true });
       
       // Tarayıcıyı aç
       setTimeout(() => {

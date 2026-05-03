@@ -81,6 +81,9 @@ export default function AddProductPage() {
   const [analyzing, setAnalyzing] = useState(false);
   const [aiResult, setAiResult] = useState(null);
   const [showVideoModal, setShowVideoModal] = useState(false);
+  const [selectedVideoId, setSelectedVideoId] = useState(null);
+  const [availableVideos, setAvailableVideos] = useState([]);
+  const [loadingVideos, setLoadingVideos] = useState(false);
   const [generatingStory, setGeneratingStory] = useState(false);
   const { isAdmin, isSeller, user, seller } = useAuth();
   const videoRef = useRef(null);
@@ -224,6 +227,18 @@ export default function AddProductPage() {
       delete payload.imageUrl;
       const savedProd = await productService.create(payload);
       setSavedProductId(savedProd.productId);
+
+      // Seçilen videoyu ürüne ata
+      if (selectedVideoId && savedProd.productId) {
+        try {
+          await fetch('/api/ai-videos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ productId: savedProd.productId, videoFolderId: selectedVideoId })
+          });
+        } catch (e) { console.warn('Video atama hatası:', e); }
+      }
+
       setStep(3);
     } catch (error) {
       console.error("Kaydetme hatası:", error);
@@ -231,8 +246,49 @@ export default function AddProductPage() {
     }
   };
 
-  const handleAIVideo = () => {
-    setShowVideoModal(true);
+  const handleAIVideo = async () => {
+    // Mevcut videoları kaydet (yeni video algılamak için)
+    let existingIds = [];
+    try {
+      const res = await fetch('/api/ai-videos');
+      const data = await res.json();
+      existingIds = (data.videos || []).map(v => v.id);
+    } catch (e) {}
+
+    // AI-VİDEO sitesini aç
+    window.open('http://localhost:5173', '_blank');
+    fetch('/api/open-folder', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'start-ai-video' })
+    }).catch(() => {});
+
+    // Yeni video oluşturulana kadar her 3 saniyede kontrol et (max 10 dakika)
+    let attempts = 0;
+    const maxAttempts = 200;
+    const pollInterval = setInterval(async () => {
+      attempts++;
+      if (attempts > maxAttempts) { clearInterval(pollInterval); return; }
+      try {
+        const res = await fetch('/api/ai-videos');
+        const data = await res.json();
+        const newVideo = (data.videos || []).find(v => !existingIds.includes(v.id));
+        if (newVideo) {
+          setSelectedVideoId(newVideo.id);
+          clearInterval(pollInterval);
+        }
+      } catch (e) {}
+    }, 3000);
+  };
+
+  const loadAvailableVideos = async () => {
+    setLoadingVideos(true);
+    try {
+      const res = await fetch('/api/ai-videos');
+      const data = await res.json();
+      setAvailableVideos(data.videos || []);
+    } catch (e) { console.warn('Video listesi yüklenemedi'); }
+    setLoadingVideos(false);
   };
 
   return (
@@ -494,14 +550,64 @@ export default function AddProductPage() {
 
 
 
-              {/* AI Video Button */}
-              <button 
-                onClick={handleAIVideo}
-                className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl font-semibold hover:from-purple-700 hover:to-indigo-700 transition-all"
-              >
-                <Film size={18} />
-                AI Video Oluştur
-              </button>
+              {/* AI Video Section */}
+              <div className="bg-purple-50 rounded-xl p-5 border border-purple-200">
+                <h4 className="font-semibold text-dark-brown mb-3 flex items-center gap-2">
+                  <Film size={18} className="text-purple-600" />
+                  AI Video
+                </h4>
+                <div className="flex gap-2 mb-3">
+                  <button 
+                    onClick={handleAIVideo}
+                    className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl font-semibold hover:from-purple-700 hover:to-indigo-700 transition-all text-sm"
+                  >
+                    <Film size={16} />
+                    Video Oluştur
+                  </button>
+                  <button 
+                    onClick={loadAvailableVideos}
+                    className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-white border-2 border-purple-300 text-purple-700 rounded-xl font-semibold hover:bg-purple-50 transition-all text-sm"
+                  >
+                    {loadingVideos ? <Loader2 size={16} className="animate-spin" /> : <Film size={16} />}
+                    Video Seç
+                  </button>
+                </div>
+
+                {/* Seçilen Video */}
+                {selectedVideoId && (
+                  <div className="bg-white rounded-lg p-3 border border-purple-200 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-purple-600 flex items-center justify-center">
+                        <Film size={14} className="text-white" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-dark-brown">Video seçildi</p>
+                        <p className="text-xs text-earth">{selectedVideoId}</p>
+                      </div>
+                    </div>
+                    <button onClick={() => setSelectedVideoId(null)} className="text-xs text-red-500 hover:text-red-700">Kaldır</button>
+                  </div>
+                )}
+
+                {/* Video Listesi */}
+                {availableVideos.length > 0 && !selectedVideoId && (
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {availableVideos.map(v => (
+                      <button
+                        key={v.id}
+                        onClick={() => { setSelectedVideoId(v.id); setAvailableVideos([]); }}
+                        className="w-full flex items-center justify-between p-3 rounded-lg border border-stone/20 hover:border-purple-400 hover:bg-purple-50/50 transition-all text-left"
+                      >
+                        <div>
+                          <p className="text-sm font-medium text-dark-brown">{v.id}</p>
+                          <p className="text-xs text-earth">{new Date(v.createdAt).toLocaleString('tr-TR')} • {(v.size / 1024 / 1024).toFixed(1)} MB</p>
+                        </div>
+                        {v.productId && <span className="text-xs bg-stone/30 text-earth px-2 py-0.5 rounded-full">Atanmış</span>}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               <div className="flex gap-3 pt-2">
                 <button onClick={() => setStep(1)} className="btn-secondary flex-1 justify-center">Geri</button>
@@ -546,21 +652,7 @@ export default function AddProductPage() {
         )}
       </div>
 
-      {/* AI Video Modal */}
-      {showVideoModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setShowVideoModal(false)}>
-          <div className="bg-white rounded-2xl p-8 max-w-md mx-4 shadow-2xl animate-fade-in-up" onClick={e => e.stopPropagation()}>
-            <div className="text-center">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 flex items-center justify-center mx-auto mb-4">
-                <Film size={28} className="text-white" />
-              </div>
-              <h3 className="text-xl font-bold text-dark-brown mb-2" style={{ fontFamily: 'var(--font-display)' }}>AI Video</h3>
-              <p className="text-earth mb-6">AI video oluşturma özelliği yakında aktif edilecektir.</p>
-              <button onClick={() => setShowVideoModal(false)} className="btn-primary w-full justify-center">Tamam</button>
-            </div>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 }

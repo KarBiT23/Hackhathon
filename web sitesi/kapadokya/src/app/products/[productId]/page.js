@@ -84,6 +84,9 @@ export default function ProductDetailPage() {
   const [showVideoModal, setShowVideoModal] = useState(false);
   const [videoMessage, setVideoMessage] = useState('');
   const [loading, setLoading] = useState(true);
+  const [productVideo, setProductVideo] = useState(null);
+  const [allVideos, setAllVideos] = useState([]);
+  const [showVideoPicker, setShowVideoPicker] = useState(false);
   const { t } = useLanguage();
 
   // Hackathon Modules State
@@ -115,6 +118,12 @@ export default function ProductDetailPage() {
           console.error(e);
         }
       }
+      // Ürüne atanmış videoyu yükle
+      try {
+        const vidRes = await fetch(`/api/ai-videos?productId=${params.productId}`);
+        const vidData = await vidRes.json();
+        if (vidData.videoUrl) setProductVideo(vidData.videoUrl);
+      } catch (e) { /* video yoksa sorun değil */ }
       setLoading(false);
     }
     loadProduct();
@@ -152,9 +161,41 @@ export default function ProductDetailPage() {
   }, [selectedCurrency, product]);
 
   const handleAIVideo = async () => {
-    const result = await aiService.generateVideo(product?.productId);
-    setVideoMessage(result.message);
-    setShowVideoModal(true);
+    // AI-VİDEO sitesini ayrı sekmede aç
+    window.open('http://localhost:5173', '_blank');
+    // Ayrıca servisleri başlatmayı dene
+    try {
+      await fetch('/api/open-folder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'start-ai-video' })
+      });
+    } catch (e) { /* sessizce geç */ }
+  };
+
+  const handleAssignVideo = async (videoFolderId) => {
+    try {
+      await fetch('/api/ai-videos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId: product.productId, videoFolderId })
+      });
+      setProductVideo(`/api/ai-videos/${videoFolderId}`);
+      setShowVideoPicker(false);
+    } catch (e) {
+      alert('Video atanamadı: ' + e.message);
+    }
+  };
+
+  const loadAllVideos = async () => {
+    try {
+      const res = await fetch('/api/ai-videos');
+      const data = await res.json();
+      setAllVideos(data.videos || []);
+      setShowVideoPicker(true);
+    } catch (e) {
+      alert('Videolar yüklenemedi.');
+    }
   };
 
   const handleCopyLink = () => {
@@ -477,43 +518,85 @@ export default function ProductDetailPage() {
 
         {/* Video Section */}
         <div className="bg-white rounded-2xl p-8 shadow-sm border border-cream mb-16">
-          <h2 className="text-2xl font-bold text-deep-earth mb-4" style={{ fontFamily: 'var(--font-display)' }}>
-            Reklam Videosu
-          </h2>
-          {advertisement?.videoUrl ? (
-            <div className="aspect-video bg-deep-earth rounded-xl flex items-center justify-center">
-              <div className="text-center text-stone">
-                <Video size={48} className="mx-auto mb-2 text-warm-orange" />
-                <p className="text-sm">Demo video alanı</p>
-                <p className="text-xs text-stone/60 mt-1">{advertisement.videoUrl}</p>
-              </div>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-bold text-deep-earth" style={{ fontFamily: 'var(--font-display)' }}>
+              AI Reklam Videosu
+            </h2>
+            {(isAdmin || isSeller) && (
+              <button
+                onClick={loadAllVideos}
+                className="text-sm px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-all flex items-center gap-2"
+              >
+                <Film size={14} />
+                Video Ata
+              </button>
+            )}
+          </div>
+          {productVideo ? (
+            <div className="aspect-video bg-black rounded-xl overflow-hidden">
+              <video
+                key={productVideo}
+                controls
+                className="w-full h-full"
+                preload="metadata"
+              >
+                <source src={productVideo} type="video/mp4" />
+                Tarayıcınız video etiketini desteklemiyor.
+              </video>
             </div>
           ) : (
             <div className="aspect-video bg-cream/50 rounded-xl flex items-center justify-center border-2 border-dashed border-stone/30">
               <div className="text-center text-earth">
                 <Video size={48} className="mx-auto mb-3 opacity-40" />
-                <p className="font-medium">Bu ürün için henüz reklam videosu eklenmemiştir.</p>
-                <p className="text-sm text-earth/60 mt-1">Satıcı yakında bir tanıtım videosu ekleyebilir.</p>
+                <p className="font-medium">Bu ürün için henüz AI videosu atanmamıştır.</p>
+                <p className="text-sm text-earth/60 mt-1">AI Video aracında video oluşturup buraya atayabilirsiniz.</p>
               </div>
             </div>
           )}
         </div>
       </div>
 
-      {/* AI Video Modal */}
-      {showVideoModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setShowVideoModal(false)}>
-          <div className="bg-white rounded-2xl p-8 max-w-md mx-4 shadow-2xl animate-fade-in-up" onClick={e => e.stopPropagation()}>
-            <div className="text-center">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 flex items-center justify-center mx-auto mb-4">
-                <Film size={28} className="text-white" />
-              </div>
-              <h3 className="text-xl font-bold text-dark-brown mb-2" style={{ fontFamily: 'var(--font-display)' }}>AI Video</h3>
-              <p className="text-earth mb-6">{videoMessage}</p>
-              <button onClick={() => setShowVideoModal(false)} className="btn-primary w-full justify-center">
-                Tamam
-              </button>
+      {/* Video Picker Modal */}
+      {showVideoPicker && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setShowVideoPicker(false)}>
+          <div className="bg-white rounded-2xl p-8 max-w-lg mx-4 shadow-2xl animate-fade-in-up max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-dark-brown" style={{ fontFamily: 'var(--font-display)' }}>Video Seç</h3>
+              <button onClick={() => setShowVideoPicker(false)} className="text-earth hover:text-dark-brown text-2xl">&times;</button>
             </div>
+            {allVideos.length === 0 ? (
+              <div className="text-center py-8 text-earth">
+                <Film size={40} className="mx-auto mb-3 opacity-40" />
+                <p>Henüz oluşturulmuş video yok.</p>
+                <p className="text-sm mt-1">Önce AI Video aracında bir video oluşturun.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {allVideos.map(v => (
+                  <button
+                    key={v.id}
+                    onClick={() => handleAssignVideo(v.id)}
+                    className={`w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all hover:border-purple-400 hover:bg-purple-50 ${
+                      v.productId === product?.productId ? 'border-purple-500 bg-purple-50' : 'border-stone/20'
+                    }`}
+                  >
+                    <div className="text-left">
+                      <p className="font-medium text-dark-brown text-sm">{v.id}</p>
+                      <p className="text-xs text-earth">{new Date(v.createdAt).toLocaleString('tr-TR')}</p>
+                      <p className="text-xs text-earth">{(v.size / 1024 / 1024).toFixed(1)} MB</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {v.productId === product?.productId && (
+                        <span className="text-xs bg-purple-600 text-white px-2 py-1 rounded-full">Atanmış</span>
+                      )}
+                      {v.productId && v.productId !== product?.productId && (
+                        <span className="text-xs bg-stone/50 text-white px-2 py-1 rounded-full">Başka ürüne atanmış</span>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}

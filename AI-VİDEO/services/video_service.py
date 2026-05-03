@@ -2,6 +2,16 @@ import ffmpeg
 import os
 from typing import List, Dict
 
+# FFmpeg'in tam yolunu PATH'e ekle (WinGet kurulumu)
+_ffmpeg_dir = os.path.join(
+    os.environ.get("LOCALAPPDATA", ""),
+    "Microsoft", "WinGet", "Packages",
+    "Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe",
+    "ffmpeg-8.1-full_build", "bin"
+)
+if os.path.isdir(_ffmpeg_dir) and _ffmpeg_dir not in os.environ.get("PATH", ""):
+    os.environ["PATH"] = _ffmpeg_dir + os.pathsep + os.environ.get("PATH", "")
+
 def escape_drawtext(text: str) -> str:
     """
     FFmpeg drawtext filter treats characters like :, ', %, and \\ as syntax.

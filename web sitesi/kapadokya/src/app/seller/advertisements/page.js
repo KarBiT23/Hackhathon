@@ -124,30 +124,20 @@ export default function AdvertisementsPage() {
           </h3>
           <p className="text-sm text-earth mb-4">Ürününüz için yapay zeka destekli tanıtım videosu oluşturun.</p>
           <button 
-            onClick={() => setShowVideoModal(true)}
+            onClick={() => {
+              window.open('http://localhost:5173', '_blank');
+              fetch('/api/open-folder', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'start-ai-video' })
+              }).catch(() => {});
+            }}
             className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl font-semibold hover:from-purple-700 hover:to-indigo-700 transition-all"
           >
             <Film size={18} />
             AI Video Oluştur
           </button>
         </div>
-      </div>
-
-      {/* AI Video Modal */}
-      {showVideoModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setShowVideoModal(false)}>
-          <div className="bg-white rounded-2xl p-8 max-w-md mx-4 shadow-2xl animate-fade-in-up" onClick={e => e.stopPropagation()}>
-            <div className="text-center">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 flex items-center justify-center mx-auto mb-4">
-                <Film size={28} className="text-white" />
-              </div>
-              <h3 className="text-xl font-bold text-dark-brown mb-2" style={{ fontFamily: 'var(--font-display)' }}>AI Video</h3>
-              <p className="text-earth mb-6">AI video oluşturma özelliği yakında aktif edilecektir.</p>
-              <button onClick={() => setShowVideoModal(false)} className="btn-primary w-full justify-center">Tamam</button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
