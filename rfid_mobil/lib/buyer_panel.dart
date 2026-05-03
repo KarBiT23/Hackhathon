@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:nfc_manager/nfc_manager.dart';
-
+import 'dart:convert';
 import 'main.dart';
 import 'lang.dart';
 
@@ -823,51 +823,35 @@ class ProductCard extends StatelessWidget {
     required this.onAddToCart,
     required this.onTap,
   });
+  Widget productImage(Map<String, dynamic> data) {
+    final imageBase64 = data["imageBase64"]?.toString() ?? "";
 
-  Widget productImage(String imageUrl) {
-    imageUrl = fixGoogleDriveImageUrl(imageUrl);
+    if (imageBase64.isNotEmpty && !imageBase64.startsWith("http")) {
+      try {
+        final cleanBase64 = imageBase64.contains(",")
+            ? imageBase64.split(",").last
+            : imageBase64;
 
-    if (imageUrl.isEmpty) {
-      imageUrl = "assets/vase.jpg";
+        return Image.memory(
+          base64Decode(cleanBase64),
+          height: 150,
+          width: double.infinity,
+          fit: BoxFit.cover,
+        );
+      } catch (e) {
+        return fallback();
+      }
     }
 
-    if (imageUrl.startsWith("assets/")) {
-      return Image.asset(
-        imageUrl,
-        height: 150,
-        width: double.infinity,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          return Container(
-            height: 150,
-            color: const Color(0xFFF1F1F1),
-            child: const Icon(Icons.image_not_supported),
-          );
-        },
-      );
-    }
+    return fallback();
+  }
 
-    return Image.network(
-      imageUrl,
+  Widget fallback() {
+    return Image.asset(
+      "assets/vase.jpg",
       height: 150,
       width: double.infinity,
       fit: BoxFit.cover,
-      loadingBuilder: (context, child, loadingProgress) {
-        if (loadingProgress == null) return child;
-
-        return Container(
-          height: 150,
-          color: const Color(0xFFF1F1F1),
-          child: const Center(child: CircularProgressIndicator()),
-        );
-      },
-      errorBuilder: (context, error, stackTrace) {
-        return Container(
-          height: 150,
-          color: const Color(0xFFF1F1F1),
-          child: const Icon(Icons.image_not_supported),
-        );
-      },
     );
   }
 
@@ -901,7 +885,7 @@ class ProductCard extends StatelessWidget {
                   borderRadius: const BorderRadius.vertical(
                     top: Radius.circular(14),
                   ),
-                  child: productImage(imageUrl),
+                  child: productImage(data),
                 ),
                 Positioned(
                   top: 8,
@@ -985,53 +969,123 @@ class ProductDetailPage extends StatelessWidget {
     required this.onAddToCart,
   });
 
-  Widget imageWidget(String imageUrl) {
-    imageUrl = fixGoogleDriveImageUrl(imageUrl);
+  Widget imageWidget(Map<String, dynamic> data) {
+    final imageBase64 = data["imageBase64"]?.toString() ?? "";
 
-    if (imageUrl.isEmpty) {
-      imageUrl = "assets/vase.jpg";
+    if (imageBase64.isNotEmpty && !imageBase64.startsWith("http")) {
+      try {
+        final cleanBase64 = imageBase64.contains(",")
+            ? imageBase64.split(",").last
+            : imageBase64;
+
+        return Image.memory(
+          base64Decode(cleanBase64),
+          width: double.infinity,
+          height: 280,
+          fit: BoxFit.cover,
+        );
+      } catch (_) {}
     }
 
-    if (imageUrl.startsWith("assets/")) {
-      return Image.asset(
-        imageUrl,
-        width: double.infinity,
-        height: 280,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          return Container(
-            width: double.infinity,
-            height: 280,
-            color: const Color(0xFFF1F1F1),
-            child: const Icon(Icons.image_not_supported, size: 60),
-          );
-        },
-      );
-    }
-
-    return Image.network(
-      imageUrl,
+    return Container(
       width: double.infinity,
       height: 280,
-      fit: BoxFit.cover,
-      loadingBuilder: (context, child, loadingProgress) {
-        if (loadingProgress == null) return child;
+      color: const Color(0xFFF1F1F1),
+      child: const Icon(Icons.image_not_supported, size: 60),
+    );
+  }
 
-        return Container(
-          width: double.infinity,
-          height: 280,
-          color: const Color(0xFFF1F1F1),
-          child: const Center(child: CircularProgressIndicator()),
-        );
-      },
-      errorBuilder: (context, error, stackTrace) {
-        return Container(
-          width: double.infinity,
-          height: 280,
-          color: const Color(0xFFF1F1F1),
-          child: const Icon(Icons.image_not_supported, size: 60),
-        );
-      },
+  Widget infoBox({
+    required IconData icon,
+    required String title,
+    required String text,
+  }) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(top: 16),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF3E6),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.orange.shade100),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: Colors.deepOrange),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 6),
+                Text(text),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget storyBox({required String title, required String text}) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(top: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF9F5F1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.brown.shade100),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.brown,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(text, style: const TextStyle(fontSize: 15, height: 1.5)),
+        ],
+      ),
+    );
+  }
+
+  Widget infoSmallBox({
+    required IconData icon,
+    required String title,
+    required String text,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(top: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.orange.shade100),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: Colors.deepOrange, size: 20),
+          const SizedBox(height: 8),
+          Text(
+            title,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 6),
+          Text(text, style: const TextStyle(fontSize: 13)),
+        ],
+      ),
     );
   }
 
@@ -1041,16 +1095,9 @@ class ProductDetailPage extends StatelessWidget {
     final category =
         data["kategori"]?.toString() ?? data["Category"]?.toString() ?? "";
     final price = data["fiyat"]?.toString() ?? "";
-
     final description =
         data["aciklama"]?.toString() ?? data["Explanation"]?.toString() ?? "";
     final video = data["videoUrl"]?.toString() ?? "";
-
-    String imageUrl = data["imageUrl"]?.toString() ?? "";
-
-    if (imageUrl.isEmpty) {
-      imageUrl = "assets/vase.jpg";
-    }
 
     return Scaffold(
       backgroundColor: const Color(0xFFF6F6F6),
@@ -1063,7 +1110,7 @@ class ProductDetailPage extends StatelessWidget {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            imageWidget(imageUrl),
+            imageWidget(data),
             Container(
               width: double.infinity,
               margin: const EdgeInsets.all(14),
@@ -1075,49 +1122,97 @@ class ProductDetailPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.orange,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      category.toUpperCase(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
                   Text(
                     name,
                     style: const TextStyle(
-                      fontSize: 24,
+                      fontSize: 28,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 10),
                   Text(
                     "$price TL",
                     style: const TextStyle(
-                      fontSize: 22,
+                      fontSize: 28,
                       color: Colors.deepOrange,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  Text("${Lang.t("category")}: $category"),
-                  const SizedBox(height: 6),
-                  Text(
-                    Lang.t("productDescription"),
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  infoBox(
+                    icon: Icons.workspace_premium,
+                    title: "Kültürel Miras Bilgilendirmesi",
+                    text: description,
                   ),
-                  const SizedBox(height: 8),
-                  Text(description),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: infoSmallBox(
+                          icon: Icons.person_outline,
+                          title: "Üreten Kişi",
+                          text: data["producer"]?.toString() ?? "Ahmet Usta",
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: infoSmallBox(
+                          icon: Icons.location_on_outlined,
+                          title: "Üretim Yeri",
+                          text:
+                              data["location"]?.toString() ?? "Ürgüp, Nevşehir",
+                        ),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: infoSmallBox(
+                          icon: Icons.palette_outlined,
+                          title: "Malzeme",
+                          text: data["material"]?.toString() ?? "Yerel Malzeme",
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: infoSmallBox(
+                          icon: Icons.handyman_outlined,
+                          title: "Teknik",
+                          text: data["technique"]?.toString() ?? "El İşçiliği",
+                        ),
+                      ),
+                    ],
+                  ),
                   if (video.isNotEmpty) ...[
                     const SizedBox(height: 16),
-                    Text(
-                      Lang.t("videoInfo"),
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    infoBox(
+                      icon: Icons.video_library_outlined,
+                      title: Lang.t("videoInfo"),
+                      text: video,
                     ),
-                    Text(video),
                   ],
                   const SizedBox(height: 20),
                   SizedBox(
                     width: double.infinity,
-                    height: 50,
+                    height: 52,
                     child: ElevatedButton.icon(
                       onPressed: () {
                         onAddToCart();
@@ -1128,6 +1223,9 @@ class ProductDetailPage extends StatelessWidget {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.orange,
                         foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
                       ),
                     ),
                   ),

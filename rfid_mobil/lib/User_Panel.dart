@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
-
+import 'main.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -43,7 +43,7 @@ class _UserPanelState extends State<UserPanel> {
 
     setState(() {
       selectedImageFile = file;
-      imageBase64 = base64Encode(bytes);
+      imageBase64 = "data:image/jpeg;base64,${base64Encode(bytes)}";
     });
   }
 
@@ -195,6 +195,22 @@ class _UserPanelState extends State<UserPanel> {
         title: const Text("Satıcı Paneli"),
         backgroundColor: const Color(0xFFB85C38),
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
+              await FirebaseAuth.instance.signOut();
+
+              if (!context.mounted) return;
+
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => const LoginPanel()),
+                (route) => false,
+              );
+            },
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
