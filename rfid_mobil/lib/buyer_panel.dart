@@ -5,6 +5,7 @@ import 'package:nfc_manager/nfc_manager.dart';
 import 'dart:convert';
 import 'main.dart';
 import 'lang.dart';
+import 'logistics/screens/logistics_dashboard_page.dart';
 
 class BuyerPanel extends StatefulWidget {
   const BuyerPanel({super.key});
@@ -15,6 +16,9 @@ class BuyerPanel extends StatefulWidget {
 
 class _BuyerPanelState extends State<BuyerPanel> {
   int selectedIndex = 0;
+  String selectedCategory = "";
+  String searchQuery = "";
+  final TextEditingController searchController = TextEditingController();
 
   final List<Map<String, dynamic>> favoriteProducts = [];
   final List<Map<String, dynamic>> cartProducts = [];
@@ -206,6 +210,7 @@ class _BuyerPanelState extends State<BuyerPanel> {
 
   Widget buildHomePage() {
     final stream = FirebaseFirestore.instance.collection("Urunler").snapshots();
+    final categories = ["Kilim", "Hali", "Comlek", "Vazo", "Seramik Tabak"];
 
     return Column(
       children: [
@@ -215,11 +220,25 @@ class _BuyerPanelState extends State<BuyerPanel> {
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.all(10),
             children: [
-              CategoryChip(title: Lang.t("rug"), selected: true),
-              CategoryChip(title: Lang.t("carpet")),
-              CategoryChip(title: Lang.t("pottery")),
-              CategoryChip(title: Lang.t("vase")),
-              CategoryChip(title: Lang.t("ceramicPlate")),
+              CategoryChip(
+                title: "Tümü",
+                selected: selectedCategory.isEmpty,
+                onTap: () {
+                  setState(() {
+                    selectedCategory = "";
+                  });
+                },
+              ),
+              for (final category in categories)
+                CategoryChip(
+                  title: category,
+                  selected: selectedCategory == category,
+                  onTap: () {
+                    setState(() {
+                      selectedCategory = category;
+                    });
+                  },
+                ),
             ],
           ),
         ),
@@ -261,7 +280,28 @@ class _BuyerPanelState extends State<BuyerPanel> {
                 return const Center(child: CircularProgressIndicator());
               }
 
-              final docs = snapshot.data!.docs;
+              final docs = snapshot.data!.docs.where((doc) {
+                final data = doc.data() as Map<String, dynamic>;
+                final name = data["isim"]?.toString().toLowerCase() ?? "";
+                final category =
+                    data["kategori"]?.toString() ??
+                    data["Category"]?.toString() ??
+                    "";
+                final normalizedCategory = _normalizeFilterText(category);
+                final selected = _normalizeFilterText(selectedCategory);
+                final query = _normalizeFilterText(searchQuery);
+                final normalizedName = _normalizeFilterText(name);
+
+                final matchesCategory =
+                    selected.isEmpty ||
+                    normalizedCategory == selected ||
+                    normalizedCategory.contains(selected) ||
+                    selected.contains(normalizedCategory);
+                final matchesSearch =
+                    query.isEmpty || normalizedName.contains(query);
+
+                return matchesCategory && matchesSearch;
+              }).toList();
 
               if (docs.isEmpty) {
                 return Center(child: Text(Lang.t("noProduct")));
@@ -363,148 +403,147 @@ class _BuyerPanelState extends State<BuyerPanel> {
     );
   }
 
+  Widget cartImage(Map<String, dynamic> data) {
+    final imageBase64 = data["imageBase64"]?.toString() ?? "";
+
+    if (imageBase64.isNotEmpty && !imageBase64.startsWith("http")) {
+      try {
+        final cleanBase64 = imageBase64.contains(",")
+            ? imageBase64.split(",").last
+            : imageBase64;
+
+        return Image.memory(
+          base64Decode(cleanBase64),
+          width: 80,
+          height: 80,
+          fit: BoxFit.cover,
+        );
+      } catch (_) {}
+    }
+
+    return Container(
+      width: 80,
+      height: 80,
+      color: Colors.grey.shade300,
+      child: const Icon(Icons.image_not_supported),
+    );
+  }
+
   Widget buildPaymentPage() {
     if (cartProducts.isEmpty) {
-      return Center(child: Text(Lang.t("emptyCart")));
+      return const Center(
+        child: Text(
+          "Sepet boş",
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        ),
+      );
     }
 
     return Column(
       children: [
         Expanded(
-          child: SingleChildScrollView(
+          child: ListView.builder(
             padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Text(
-                    Lang.t("securePayment"),
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                    ),
+            itemCount: cartProducts.length,
+            itemBuilder: (context, index) {
+              final product = cartProducts[index];
+
+              final name = product["isim"]?.toString() ?? "";
+              final category =
+                  product["kategori"]?.toString() ??
+                  product["Category"]?.toString() ??
+                  "";
+              final price = product["fiyat"]?.toString() ?? "";
+
+              return Card(
+                margin: const EdgeInsets.only(bottom: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: cartImage(product),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text("Kategori: $category"),
+                            const SizedBox(height: 6),
+                            Text(
+                              "$price TL",
+                              style: const TextStyle(
+                                fontSize: 18,
+                                color: Colors.deepOrange,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete, color: Colors.red),
+                        onPressed: () {
+                          setState(() {
+                            cartProducts.removeAt(index);
+                          });
+                        },
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 16),
-                paymentBox(
-                  title: Lang.t("deliveryInfo"),
-                  children: [
-                    radioRow(Lang.t("addressDelivery"), true),
-                    const SizedBox(height: 10),
-                    inputBox(
-                      Lang.t("deliveryAddress"),
-                      "Yurt / Nevşehir Merkez",
-                    ),
-                    checkRow(Lang.t("sameInvoice"), true),
-                    const Divider(),
-                    radioRow(Lang.t("pickupPoint"), false),
-                    const SizedBox(height: 6),
-                    Text(
-                      Lang.t("pickupDiscount"),
-                      style: const TextStyle(color: Colors.orange),
-                    ),
-                  ],
-                ),
-                paymentBox(
-                  title: Lang.t("paymentOptions"),
-                  children: [radioRow(Lang.t("cardPayment"), true)],
-                ),
-                paymentBox(
-                  title: Lang.t("cardInfo"),
-                  children: [
-                    inputBox(Lang.t("cardName"), "Ad Soyad"),
-                    inputBox(Lang.t("cardNumber"), "0000 0000 0000 0000"),
-                    Row(
-                      children: [
-                        Expanded(child: inputBox("SKT", "AA/YY")),
-                        const SizedBox(width: 10),
-                        Expanded(child: inputBox("CVV", "123")),
-                      ],
-                    ),
-                    checkRow("3D Secure", false),
-                  ],
-                ),
-                paymentBox(
-                  title: Lang.t("installments"),
-                  children: [
-                    radioRow(
-                      Lang.t("singlePayment"),
-                      true,
-                      price: "$totalPrice TL",
-                    ),
-                  ],
-                ),
-                checkRow(Lang.t("contractCheck"), false),
-                paymentBox(
-                  title: Lang.t("contracts"),
-                  children: [
-                    Text(
-                      Lang.t("salesContract"),
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      "MESAFELİ SATIŞ SÖZLEŞMESİ\n\n1. TARAFLAR\n\nBu bölüm örnek sözleşme metnidir.",
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      Lang.t("infoForm"),
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      "ÖN BİLGİLENDİRME FORMU\n\n1. TARAFLAR VE KONU\n\nBu bölüm örnek bilgilendirme metnidir.",
-                    ),
-                  ],
-                ),
-              ],
-            ),
+              );
+            },
           ),
         ),
         Container(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(16),
           color: Colors.white,
-          child: Row(
+          child: Column(
             children: [
-              Container(
-                height: 52,
-                width: 130,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.orange),
-                  borderRadius: const BorderRadius.horizontal(
-                    left: Radius.circular(12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    "Toplam",
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
-                ),
-                child: Text(
-                  "$totalPrice TL",
-                  style: const TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold,
+                  Text(
+                    "$totalPrice TL",
+                    style: const TextStyle(
+                      fontSize: 22,
+                      color: Colors.deepOrange,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
+                ],
               ),
-              Expanded(
-                child: SizedBox(
-                  height: 52,
-                  child: ElevatedButton(
-                    onPressed: showPaymentDialog,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.orange,
-                      foregroundColor: Colors.white,
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.horizontal(
-                          right: Radius.circular(12),
-                        ),
-                      ),
-                    ),
-                    child: Text(
-                      Lang.t("confirmFinish"),
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton.icon(
+                  onPressed: showPaymentDialog,
+                  icon: const Icon(Icons.payment),
+                  label: const Text("Ödemeye Geç"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                    foregroundColor: Colors.white,
                   ),
                 ),
               ),
@@ -673,12 +712,31 @@ class _BuyerPanelState extends State<BuyerPanel> {
     if (selectedIndex == 2) return buildFavoritesPage();
     if (selectedIndex == 3) return buildPaymentPage();
     if (selectedIndex == 4) return buildAccountPage();
+    if (selectedIndex == 5) return const LogisticsDashboardPage();
 
     return Center(child: Text(Lang.t("prepared")));
   }
 
+  String _normalizeFilterText(String value) {
+    return value
+        .toLowerCase()
+        .replaceAll("ç", "c")
+        .replaceAll("ğ", "g")
+        .replaceAll("ı", "i")
+        .replaceAll("ö", "o")
+        .replaceAll("ş", "s")
+        .replaceAll("ü", "u")
+        .replaceAll("ä±", "i")
+        .replaceAll("ã§", "c")
+        .replaceAll("ã¶", "o")
+        .replaceAll("åÿ", "s")
+        .replaceAll("ã¼", "u");
+  }
+
   @override
   void dispose() {
+    searchController.dispose();
+
     try {
       NfcManager.instance.stopSession();
     } catch (_) {}
@@ -705,12 +763,20 @@ class _BuyerPanelState extends State<BuyerPanel> {
               const Icon(Icons.search, color: Colors.orange),
               const SizedBox(width: 8),
               Expanded(
-                child: Text(
-                  Lang.t("search"),
-                  style: const TextStyle(color: Colors.black54, fontSize: 15),
+                child: TextField(
+                  controller: searchController,
+                  decoration: InputDecoration(
+                    border: InputBorder.none,
+                    hintText: Lang.t("search"),
+                    isDense: true,
+                  ),
+                  onChanged: (value) {
+                    setState(() {
+                      searchQuery = value;
+                    });
+                  },
                 ),
               ),
-              const Icon(Icons.camera_alt_outlined, color: Colors.black54),
             ],
           ),
         ),
@@ -739,13 +805,17 @@ class _BuyerPanelState extends State<BuyerPanel> {
             icon: const Icon(Icons.favorite_border),
             label: Lang.t("favorites"),
           ),
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.payment),
-            label: Lang.t("payment"),
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.shopping_cart),
+            label: "Sepet",
           ),
           BottomNavigationBarItem(
             icon: const Icon(Icons.person),
             label: Lang.t("account"),
+          ),
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.route),
+            label: "Lojistik",
           ),
         ],
       ),
@@ -756,24 +826,49 @@ class _BuyerPanelState extends State<BuyerPanel> {
 class CategoryChip extends StatelessWidget {
   final String title;
   final bool selected;
+  final VoidCallback? onTap;
 
-  const CategoryChip({super.key, required this.title, this.selected = false});
+  const CategoryChip({
+    super.key,
+    required this.title,
+    this.selected = false,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(right: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 18),
-      decoration: BoxDecoration(
-        color: selected ? Colors.orange : Colors.white,
-        borderRadius: BorderRadius.circular(22),
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        title,
-        style: TextStyle(color: selected ? Colors.white : Colors.black),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(right: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 18),
+        decoration: BoxDecoration(
+          color: selected ? Colors.orange : Colors.white,
+          borderRadius: BorderRadius.circular(22),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          title,
+          style: TextStyle(color: selected ? Colors.white : Colors.black),
+        ),
       ),
     );
+  }
+
+  String _normalizeFilterText(String value) {
+    return value
+        .toLowerCase()
+        .replaceAll("ç", "c")
+        .replaceAll("ğ", "g")
+        .replaceAll("ı", "i")
+        .replaceAll("ö", "o")
+        .replaceAll("ş", "s")
+        .replaceAll("ü", "u")
+        .replaceAll("ä±", "i")
+        .replaceAll("ã§", "c")
+        .replaceAll("ã¶", "o")
+        .replaceAll("åŸ", "s")
+        .replaceAll("ã¼", "u");
   }
 }
 
@@ -1162,13 +1257,28 @@ class ProductDetailPage extends StatelessWidget {
                     title: "Kültürel Miras Bilgilendirmesi",
                     text: description,
                   ),
+                  Text(description),
+
+                  storyBox(
+                    title: "Ürünün Hikayesi",
+                    text:
+                        data["hikaye"]?.toString() ??
+                        "Bu ürün geleneksel yöntemlerle üretilmiştir.",
+                  ),
+
+                  storyBox(
+                    title: "Kapadokya ile Bağlantısı",
+                    text:
+                        data["baglanti"]?.toString() ??
+                        "Kapadokya bölgesinin kültürel mirasını yansıtır.",
+                  ),
                   Row(
                     children: [
                       Expanded(
                         child: infoSmallBox(
                           icon: Icons.person_outline,
                           title: "Üreten Kişi",
-                          text: data["producer"]?.toString() ?? "Ahmet Usta",
+                          text: data["ArtisanName"]?.toString() ?? "",
                         ),
                       ),
                       const SizedBox(width: 10),
@@ -1176,8 +1286,7 @@ class ProductDetailPage extends StatelessWidget {
                         child: infoSmallBox(
                           icon: Icons.location_on_outlined,
                           title: "Üretim Yeri",
-                          text:
-                              data["location"]?.toString() ?? "Ürgüp, Nevşehir",
+                          text: data["SallerLocation"]?.toString() ?? "",
                         ),
                       ),
                     ],
@@ -1186,17 +1295,18 @@ class ProductDetailPage extends StatelessWidget {
                     children: [
                       Expanded(
                         child: infoSmallBox(
-                          icon: Icons.palette_outlined,
-                          title: "Malzeme",
-                          text: data["material"]?.toString() ?? "Yerel Malzeme",
+                          icon: Icons.local_shipping_outlined,
+                          title: "Kargo Tipi",
+                          text: data["CargoType"]?.toString() ?? "",
                         ),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: infoSmallBox(
-                          icon: Icons.handyman_outlined,
-                          title: "Teknik",
-                          text: data["technique"]?.toString() ?? "El İşçiliği",
+                          icon: Icons.inventory_2_outlined,
+                          title: "Ürün Bilgisi",
+                          text:
+                              "Ağırlık: ${data["WeightKg"]?.toString() ?? ""} kg / Kapasite: ${data["capacity"]?.toString() ?? ""}",
                         ),
                       ),
                     ],
