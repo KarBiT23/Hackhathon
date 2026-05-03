@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { Menu, X, ShoppingBag, User, LogOut, CreditCard, Wifi, LayoutDashboard, Home, Package, Globe } from 'lucide-react';
+import CurrencyTicker from './CurrencyTicker';
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -40,6 +41,8 @@ export default function Navbar() {
 
           {/* Right Actions */}
           <div className="hidden lg:flex items-center gap-3">
+            <CurrencyTicker />
+
             {/* Language Switcher */}
             <div className="flex items-center bg-cream/50 rounded-xl p-1 border border-stone/20 mr-2">
               <button 

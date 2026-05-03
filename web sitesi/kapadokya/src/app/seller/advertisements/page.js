@@ -138,6 +138,7 @@ export default function AdvertisementsPage() {
             AI Video Oluştur
           </button>
         </div>
+      </div>
     </div>
   );
 }

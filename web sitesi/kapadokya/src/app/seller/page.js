@@ -66,7 +66,7 @@ export default function SellerDashboard() {
               {isAdmin ? 'Sistem Yöneticisi Paneli' : 'Satıcı Paneli'}
             </h1>
             <p className="text-earth">
-              {isAdmin ? 'Tüm Kapadokya e-ticaret ekosisteminin genel özeti' : 'Ahmet Usta - Kapadokya Halı ve Seramik Atölyesi'}
+              {isAdmin ? 'Tüm Kapadokya e-ticaret ekosisteminin genel özeti' : 'Ahmet Usta - Kapadokya Halı Atölyesi'}
             </p>
           </div>
           <Link href="/seller/add-product" className="btn-primary">
