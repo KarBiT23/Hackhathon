@@ -24,6 +24,23 @@ export const en = {
     contact: "Contact",
     address: "Avanos, Nevsehir, Turkey",
     rights: "All rights reserved.",
+    sellerLogin: "Seller Login",
+    privacyPolicy: "Privacy Policy",
+    termsOfUse: "Terms of Use",
+  },
+
+  // Categories
+  categories: {
+    title: "Categories",
+    desc: "Explore Cappadocia's rich craft collection",
+    Seramik: "Ceramics",
+    Halı: "Carpets",
+    Kilim: "Rugs",
+    Çömlek: "Pottery",
+    Vazo: "Vases",
+    Testi: "Jugs",
+    Tabak: "Plates",
+    'Diğer El Sanatları': "Other Crafts"
   },
 
   // Home Page
@@ -41,6 +58,7 @@ export const en = {
     feature3Title: "Global Shipping",
     feature3Desc: "Safe delivery anywhere in the world with sustainable packaging.",
     featuredProducts: "Featured Artifacts",
+    culturalHeritage: "Cultural Heritage"
   },
 
   // Products

@@ -144,9 +144,9 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl lg:text-4xl font-bold text-deep-earth mb-3" style={{ fontFamily: 'var(--font-display)' }}>
-              Kategoriler
+              {t('categories.title')}
             </h2>
-            <p className="text-earth text-lg">Kapadokya&apos;nın zengin el sanatları koleksiyonunu keşfedin</p>
+            <p className="text-earth text-lg">{t('categories.desc')}</p>
           </div>
           
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-4">
@@ -162,7 +162,7 @@ export default function HomePage() {
                   className="card-hover group flex flex-col items-center gap-3 p-5 bg-white rounded-2xl shadow-sm border border-cream hover:border-terracotta/30"
                 >
                   <span className="text-3xl group-hover:scale-110 transition-transform">{categoryIcons[cat] || '✨'}</span>
-                  <span className="text-sm font-medium text-dark-brown text-center">{cat}</span>
+                  <span className="text-sm font-medium text-dark-brown text-center">{t(`categories.${cat}`).startsWith('categories.') ? cat : t(`categories.${cat}`)}</span>
                 </Link>
               ))
             )}
@@ -218,7 +218,7 @@ export default function HomePage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 rounded-full text-sm text-stone mb-6">
             <Star size={14} className="text-sunset" />
-            Kültürel Miras
+            {t('home.culturalHeritage')}
           </div>
           <h2 className="text-3xl lg:text-4xl font-bold mb-6" style={{ fontFamily: 'var(--font-display)' }}>
             {t('home.featuresTitle')}

@@ -46,19 +46,19 @@ export default function Footer() {
               <FooterLink href="/">{t('nav.home')}</FooterLink>
               <FooterLink href="/products">{t('nav.products')}</FooterLink>
               <FooterLink href="/rfid">{t('nav.rfid')}</FooterLink>
-              <FooterLink href="/login">Satıcı Girişi</FooterLink>
+              <FooterLink href="/login">{t('footer.sellerLogin')}</FooterLink>
             </ul>
           </div>
 
           {/* Categories */}
           <div>
-            <h3 className="font-bold text-dark-brown mb-6" style={{ fontFamily: 'var(--font-display)' }}>Kategoriler</h3>
+            <h3 className="font-bold text-dark-brown mb-6" style={{ fontFamily: 'var(--font-display)' }}>{t('categories.title')}</h3>
             <ul className="space-y-3">
-              <FooterLink href="/products?category=Seramik">Seramik</FooterLink>
-              <FooterLink href="/products?category=Halı">Halı</FooterLink>
-              <FooterLink href="/products?category=Kilim">Kilim</FooterLink>
-              <FooterLink href="/products?category=Çömlek">Çömlek</FooterLink>
-              <FooterLink href="/products?category=Vazo">Vazo</FooterLink>
+              <FooterLink href="/products?category=Seramik">{t('categories.Seramik')}</FooterLink>
+              <FooterLink href="/products?category=Halı">{t('categories.Halı')}</FooterLink>
+              <FooterLink href="/products?category=Kilim">{t('categories.Kilim')}</FooterLink>
+              <FooterLink href="/products?category=Çömlek">{t('categories.Çömlek')}</FooterLink>
+              <FooterLink href="/products?category=Vazo">{t('categories.Vazo')}</FooterLink>
             </ul>
           </div>
 
@@ -88,8 +88,8 @@ export default function Footer() {
             © {new Date().getFullYear()} Kapadokya El Sanatları. {t('footer.rights')}
           </p>
           <div className="flex items-center gap-6 text-sm text-dark-brown">
-            <Link href="#" className="hover:text-white transition-colors">Gizlilik Politikası</Link>
-            <Link href="#" className="hover:text-white transition-colors">Kullanım Koşulları</Link>
+            <Link href="#" className="hover:text-white transition-colors">{t('footer.privacyPolicy')}</Link>
+            <Link href="#" className="hover:text-white transition-colors">{t('footer.termsOfUse')}</Link>
           </div>
         </div>
       </div>

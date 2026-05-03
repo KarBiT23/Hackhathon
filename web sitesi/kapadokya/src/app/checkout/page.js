@@ -58,7 +58,7 @@ function CheckoutContent() {
     setDeliveryData({ ...routeInfo, isDemo });
   };
 
-  const totalPrice = product ? product.price + (selectedShipping?.price || 0) : 0;
+  const totalPrice = product ? product.price : 0;
 
   useEffect(() => {
     async function updateCurrency() {
@@ -204,42 +204,7 @@ function CheckoutContent() {
                   </div>
                 </div>
 
-                {/* Shipping */}
-                <div className="bg-white rounded-2xl p-6 shadow-sm border border-cream">
-                  <h3 className="font-semibold text-dark-brown mb-4 flex items-center gap-2">
-                    <Truck size={18} className="text-terracotta" />
-                    Kargo Seçimi
-                  </h3>
-                  <div className="space-y-3">
-                    {shippingOptions.map(opt => (
-                      <label 
-                        key={opt.shippingOptionId}
-                        className={`flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                          selectedShipping?.shippingOptionId === opt.shippingOptionId
-                            ? 'border-terracotta bg-cream/50'
-                            : 'border-stone/20 hover:border-stone/40'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <input
-                            type="radio"
-                            name="shipping"
-                            checked={selectedShipping?.shippingOptionId === opt.shippingOptionId}
-                            onChange={() => setSelectedShipping(opt)}
-                            className="accent-terracotta w-4 h-4"
-                          />
-                          <div>
-                            <p className="font-medium text-dark-brown">{opt.companyName}</p>
-                            <p className="text-sm text-earth">{opt.deliveryTime} {opt.internationalAvailable && '• Uluslararası'}</p>
-                          </div>
-                        </div>
-                        <span className="font-semibold text-dark-brown">
-                          {opt.freeShipping ? <span className="text-green-600">Ücretsiz</span> : formatPrice(opt.price)}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
+
 
                 {/* Yeni Sürdürülebilir Teslimat Seçicisi */}
                 <DeliveryLocationSelector 
@@ -341,12 +306,7 @@ function CheckoutContent() {
                 <span className="text-earth">Ürün</span>
                 <span className="text-dark-brown">{formatPrice(product.price)}</span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-earth">Kargo</span>
-                <span className="text-dark-brown">
-                  {selectedShipping?.freeShipping ? <span className="text-green-600">Ücretsiz</span> : formatPrice(selectedShipping?.price || 0)}
-                </span>
-              </div>
+
             </div>
             <div className="flex justify-between items-center">
               <span className="font-semibold text-dark-brown">Toplam</span>

@@ -24,6 +24,23 @@ export const tr = {
     contact: "İletişim",
     address: "Avanos, Nevşehir, Türkiye",
     rights: "Tüm hakları saklıdır.",
+    sellerLogin: "Satıcı Girişi",
+    privacyPolicy: "Gizlilik Politikası",
+    termsOfUse: "Kullanım Koşulları",
+  },
+
+  // Categories
+  categories: {
+    title: "Kategoriler",
+    desc: "Kapadokya'nın zengin el sanatları koleksiyonunu keşfedin",
+    Seramik: "Seramik",
+    Halı: "Halı",
+    Kilim: "Kilim",
+    Çömlek: "Çömlek",
+    Vazo: "Vazo",
+    Testi: "Testi",
+    Tabak: "Tabak",
+    'Diğer El Sanatları': "Diğer El Sanatları"
   },
 
   // Home Page
@@ -41,6 +58,7 @@ export const tr = {
     feature3Title: "Global Gönderim",
     feature3Desc: "Sürdürülebilir paketleme ile dünyanın her yerine güvenli teslimat.",
     featuredProducts: "Öne Çıkan Eserler",
+    culturalHeritage: "Kültürel Miras"
   },
 
   // Products

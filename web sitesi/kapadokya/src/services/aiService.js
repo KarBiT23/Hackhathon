@@ -58,48 +58,62 @@ export const aiService = {
     });
 
     // 1. Kendi Eğittiğimiz Python AI Modeline bağlanmayı dene
-    try {
-      if (imageData) {
-        let blob;
-        if (typeof imageData === 'string' && imageData.startsWith('data:image')) {
-          const res = await fetch(imageData);
-          blob = await res.blob();
-        } else {
-          blob = imageData; // File object
-        }
+    const tryFetch = async (retries = 3) => {
+      for (let i = 0; i < retries; i++) {
+        try {
+          if (!imageData) return null;
+          
+          let blob;
+          if (typeof imageData === 'string' && imageData.startsWith('data:image')) {
+            const res = await fetch(imageData);
+            blob = await res.blob();
+          } else {
+            blob = imageData; // File object
+          }
 
-        const formData = new FormData();
-        formData.append("file", blob, "upload.jpg");
+          const formData = new FormData();
+          formData.append("file", blob, "upload.jpg");
 
-        // Python FastAPI sunucusuna gönder
-        const response = await fetch("http://127.0.0.1:8000/predict", {
-          method: "POST",
-          body: formData,
-        });
+          const response = await fetch("http://127.0.0.1:8000/predict", {
+            method: "POST",
+            body: formData,
+          });
 
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success && data.category) {
-            const results = getCategoryDetails();
-            return results[data.category] || {
-              ...results['Seramik'],
-              category: data.category,
-              suggestedName: `Özel ${data.category} Eseri`,
-              confidence: 0.95
-            };
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.category) {
+              const results = getCategoryDetails();
+              return results[data.category] || {
+                ...results['Seramik'],
+                category: data.category,
+                suggestedName: `Özel ${data.category} Eseri`,
+                confidence: 0.95
+              };
+            }
+          }
+        } catch (e) {
+          if (i === 0) {
+            console.log("FastAPI kapalı, otomatik başlatılıyor...");
+            // Sunucuyu başlatmayı tetikle
+            try {
+              await fetch('/api/open-folder', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'start-fastapi' })
+              });
+            } catch (err) {}
+          }
+          // Modellerin yüklenmesi için bekle (her denemede 5 saniye bekle)
+          if (i < retries - 1) {
+            console.log(`AI modeli yükleniyor... Bekleniyor (${i+1}/${retries})`);
+            await delay(5000);
           }
         }
       }
-    } catch (e) {
-      console.log("Özel AI modeline bağlanılamadı (FastAPI kapalı olabilir), Mock veriye geçiliyor:", e.message);
-    }
+      throw new Error("Yapay Zeka sunucusu başlatılamadı. Lütfen manuel olarak python_api/app.py dosyasını çalıştırın.");
+    };
 
-    // 2. Fallback: Python sunucusu kapalıysa rastgele sonuç ver (Hata vermesin)
-    await delay(1500);
-    const results = getCategoryDetails();
-    const categories = ['Comlek', 'Vazo', 'Hali', 'Kilim', 'Tabak'];
-    const randomCategory = categories[Math.floor(Math.random() * categories.length)];
-    return results[randomCategory];
+    return await tryFetch();
   },
 
   /**
@@ -117,14 +131,24 @@ export const aiService = {
   },
 
   /**
-   * AI Video generation - placeholder
-   * In Firebase: Call Cloud Function / external AI video API
+   * AI Video generation
    */
   generateVideo: async (productId) => {
-    await delay(500);
-    return {
-      success: false,
-      message: 'AI video oluşturma özelliği yakında aktif edilecektir.'
-    };
+    try {
+      await fetch('/api/open-folder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'start-ai-video' })
+      });
+      return {
+        success: true,
+        message: 'AI Video aracı ayrı bir pencerede açılıyor. Videoyu orada oluşturduktan sonra buraya dönebilirsiniz.'
+      };
+    } catch (e) {
+      return {
+        success: false,
+        message: 'AI video aracı başlatılamadı.'
+      };
+    }
   }
 };
