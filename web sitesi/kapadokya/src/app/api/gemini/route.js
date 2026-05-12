@@ -1,11 +1,18 @@
 import { NextResponse } from 'next/server';
 
-const GEMINI_API_KEY = 'AIzaSyClUXIe0qyG7lzkr6snIvnfE2X5bwwa2kc';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 export async function POST(request) {
+  let body = {};
+
   try {
-    const body = await request.json();
+    body = await request.json();
     const { productName, category, materials, technique } = body;
+
+    if (!GEMINI_API_KEY) {
+      const fallbackStory = `${productName}, Kapadokya'nÄ±n eÅŸsiz ${category} geleneÄŸinin modern bir yorumudur. ${materials} kullanÄ±larak, usta ellerde ${technique} ile Ã¼retilmiÅŸtir. Binlerce yÄ±llÄ±k Anadolu kÃ¼ltÃ¼rel mirasÄ±nÄ± yaÅŸam alanlarÄ±nÄ±za taÅŸÄ±yan bu eser, eÅŸsiz bir sanat ve tarih sentezidir.`;
+      return NextResponse.json({ story: fallbackStory });
+    }
 
     const prompt = `Sen bir Kapadokya el sanatları uzmanısın. Aşağıdaki ürün için kısa ve etkileyici bir kültürel hikaye yaz (en fazla 3 cümle, Türkçe):
     
